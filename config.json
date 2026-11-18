@@ -1,5 +1,6 @@
 {
   "timezone": "Asia/Seoul",
+  "run_at": "08:23",
   "top_n": 10,
   "max_candidates_checked": 30,
   "per_query_results": 30,

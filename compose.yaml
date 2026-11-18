@@ -1,0 +1,17 @@
+# 홈서버 실행: docker compose up -d --build
+services:
+  tracker:
+    build: .
+    restart: unless-stopped
+    # 리포트 파일이 호스트 사용자 소유로 남도록 호스트의 UID:GID 로 실행한다 (.env 에서 변경).
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      RUN_AT: "${RUN_AT:-08:23}" # 매일 실행 시각 (config.json 의 timezone 기준, 기본 Asia/Seoul)
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}" # 선택. 없어도 동작한다 (검색 조회에만 사용)
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

@@ -32,12 +32,36 @@ AI 에이전트용 스킬(Agent Skills, `SKILL.md`) 레포를 GitHub 스타 순�
 - 클론은 검사 직후 삭제하고, 리포트에는 메타데이터와 검사 결과만 싣는다.
 - 워크플로 권한은 이 레포에 대한 `contents: write` 하나뿐이다.
 
-## 실행
+## 홈서버에서 실행 (Docker)
 
-자동: `.github/workflows/daily-report.yml` 이 매일 08:23 KST 에 실행되어 결과를 커밋합니다.
+Docker 와 Docker Compose 만 있으면 됩니다. 컨테이너가 상주하며 매일 정해진 시각에 실행합니다.
+
+```bash
+git clone https://github.com/lvalue-dev/skills-tracker.git && cd skills-tracker
+cp .env.example .env            # PUID/PGID(`id -u`, `id -g`), 실행 시각, (선택) 토큰
+mkdir -p data reports
+docker compose up -d --build    # 이후 매일 RUN_AT(기본 08:23 KST)에 자동 실행
+docker compose logs -f tracker  # 진행 상황 확인
+```
+
+- 리포트는 홈서버의 `reports/YYYY-MM-DD.pdf`, 원본 데이터는 `data/` 에 쌓입니다 (호스트 폴더 마운트).
+- 서버가 꺼져 있다가 실행 시각을 지나 켜지면 오늘자 리포트가 없을 때 바로 한 번 실행합니다.
+- 실패하면 30분 간격으로 하루 최대 3번까지만 다시 시도합니다.
+- 지금 바로 한 번 실행: `docker compose run --rm tracker scripts/run_daily.sh`
+- 코드 갱신: `git pull && docker compose up -d --build`
+- GitHub 토큰은 없어도 됩니다. 넣는다면 권한을 하나도 주지 않은 토큰이면 충분하고, 검색 조회에만 쓰입니다.
+- 컨테이너는 비루트 사용자로, 모든 권한(capability)을 제거한 채 실행됩니다. 이미지 크기는 약 1.6GB 입니다.
+- 홈서버는 리포트를 로컬에만 저장하고 GitHub 로 푸시하지 않습니다.
+
+홈서버로 옮긴 뒤에는 중복 수집을 피하도록 GitHub Actions 의 **Daily skills report** 워크플로를
+비활성화하세요 (Actions 탭 → 워크플로 선택 → Disable workflow).
+
+## GitHub Actions 로 실행
+
+`.github/workflows/daily-report.yml` 이 매일 08:23 KST 에 실행되어 결과를 이 레포에 커밋합니다.
 Actions 탭에서 **Run workflow** 로 수동 실행할 수도 있습니다.
 
-수동(로컬):
+## 직접 실행 (Docker 없이)
 
 ```bash
 scripts/run_daily.sh                   # 폰트·의존성 확인 → 자체 테스트 → 오늘자 수집·테스트·리포트
@@ -45,9 +69,10 @@ scripts/run_daily.sh --render-only     # 네트워크 없이 저장된 data/<오
 python -m unittest discover -s tests   # 검사기 자체 테스트만
 ```
 
-필요한 것: Python 3.11+, `git`, `gh`(로그인 또는 `GH_TOKEN`), `node`, Chrome/Chromium
-(`CHROME_BIN` 으로 지정 가능), 한글 폰트(`fonts-noto-cjk`).
+필요한 것: Python 3.11+, `git`, `node`, Chrome/Chromium(`CHROME_BIN` 으로 지정 가능),
+한글 폰트(`fonts-noto-cjk`). `gh` 는 있으면 쓰고 없으면 HTTPS 로 직접 조회합니다.
 
 ## 설정
 
-`config.json` 에서 검색어(`search_queries`), 수집 개수(`top_n`), 시간대, 요청 간격, 상한을 바꿀 수 있습니다.
+`config.json` 에서 검색어(`search_queries`), 수집 개수(`top_n`), 시간대, 실행 시각(`run_at`), 요청 간격, 상한을 바꿀 수 있습니다.
+홈서버에서는 `config.json` 을 고친 뒤 `docker compose up -d --build` 로 반영합니다.

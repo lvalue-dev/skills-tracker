@@ -6,7 +6,10 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tracker import checks, fetch, report  # noqa: E402
+import datetime as dt  # noqa: E402
+from unittest import mock  # noqa: E402
+
+from tracker import checks, collect, fetch, report, schedule  # noqa: E402
 from tracker.__main__ import apply_history  # noqa: E402
 
 LIMITS = {"max_file_bytes": 524288, "max_scripts_per_repo": 400}
@@ -197,6 +200,43 @@ class RepoLevelTests(unittest.TestCase):
         self.assertEqual([(r["full_name"], r["delta"]) for r in rising], [("a/a", 50), ("c/c", 30)])
         self.assertEqual(report.rank_change(top[0]), "▲1")
         self.assertEqual(report.rank_change(top[1]), "NEW")
+
+
+class HomeServerTests(unittest.TestCase):
+    def test_search_falls_back_to_https_without_gh(self):
+        with mock.patch("tracker.collect.shutil.which", return_value=None):
+            self.assertEqual(collect.backends(), [collect._search_http])
+        with mock.patch("tracker.collect.shutil.which", return_value="/usr/bin/gh"):
+            self.assertEqual(collect.backends(), [collect._search_gh, collect._search_http])
+
+    def test_search_uses_https_when_gh_fails(self):
+        items = [{"full_name": "a/b"}]
+        with mock.patch("tracker.collect.shutil.which", return_value="/usr/bin/gh"), \
+                mock.patch("tracker.collect._search_gh", side_effect=collect.SearchError("not logged in")), \
+                mock.patch("tracker.collect._search_http", return_value=items) as http:
+            self.assertEqual(collect._search("q", 5), items)
+            http.assert_called_once_with("q", 5)
+
+    def test_tokens_are_not_passed_to_third_party_subprocesses(self):
+        with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "x", "GH_TOKEN": "y"}):
+            env = fetch.safe_env()
+        self.assertNotIn("GITHUB_TOKEN", env)
+        self.assertNotIn("GH_TOKEN", env)
+
+    def test_schedule_decisions(self):
+        run_at = schedule.parse_run_at("08:23")
+        at = lambda h, m: dt.datetime(2026, 1, 2, h, m)  # noqa: E731
+        act = schedule.next_action
+        self.assertEqual(act(at(7, 23), run_at, False, 0, None), ("sleep", 3600.0))
+        self.assertEqual(act(at(8, 23), run_at, False, 0, None), ("run", 0.0))
+        # 실행 시각이 지난 뒤 켜졌고 오늘 리포트가 없으면 바로 실행
+        self.assertEqual(act(at(15, 0), run_at, False, 0, None), ("run", 0.0))
+        # 이미 있으면 내일 실행 시각까지 대기
+        self.assertEqual(act(at(9, 23), run_at, True, 1, at(8, 23)), ("sleep", 23 * 3600.0))
+        # 실패 후 30분 대기, 그다음 재시도, 3번 실패하면 내일까지 대기
+        self.assertEqual(act(at(8, 33), run_at, False, 1, at(8, 23)), ("sleep", 1200.0))
+        self.assertEqual(act(at(8, 53), run_at, False, 1, at(8, 23)), ("run", 0.0))
+        self.assertEqual(act(at(9, 23), run_at, False, 3, at(9, 23)), ("sleep", 23 * 3600.0))
 
 
 if __name__ == "__main__":
