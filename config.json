@@ -1,0 +1,27 @@
+{
+  "timezone": "Asia/Seoul",
+  "top_n": 10,
+  "max_candidates_checked": 30,
+  "per_query_results": 30,
+  "seconds_between_api_calls": 2.5,
+  "seconds_between_clones": 2.0,
+  "search_qualifiers": "fork:false archived:false",
+  "search_queries": [
+    "topic:agent-skills",
+    "topic:claude-skills",
+    "topic:claude-code-skills",
+    "topic:agentskills",
+    "topic:ai-skills",
+    "topic:codex-skills",
+    "agent skills in:name,description",
+    "claude skills in:name,description",
+    "skill in:name"
+  ],
+  "limits": {
+    "max_skills_per_repo": 5000,
+    "max_scripts_per_repo": 400,
+    "max_file_bytes": 524288,
+    "clone_timeout_seconds": 240,
+    "checkout_timeout_seconds": 420
+  }
+}
