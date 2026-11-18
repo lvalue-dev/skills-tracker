@@ -40,10 +40,9 @@ Actions 탭에서 **Run workflow** 로 수동 실행할 수도 있습니다.
 수동(로컬):
 
 ```bash
-pip install -r requirements.txt
-python -m unittest discover -s tests   # 검사기 자체 테스트 (네트워크 불필요)
-python -m tracker                      # 오늘자 수집·테스트·리포트
-python -m tracker --render-only        # 저장된 data/<오늘>.json 으로 리포트만 재생성
+scripts/run_daily.sh                   # 폰트·의존성 확인 → 자체 테스트 → 오늘자 수집·테스트·리포트
+scripts/run_daily.sh --render-only     # 네트워크 없이 저장된 data/<오늘>.json 으로 리포트만 재생성
+python -m unittest discover -s tests   # 검사기 자체 테스트만
 ```
 
 필요한 것: Python 3.11+, `git`, `gh`(로그인 또는 `GH_TOKEN`), `node`, Chrome/Chromium

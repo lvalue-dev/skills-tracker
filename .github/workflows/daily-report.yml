@@ -24,15 +24,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies and CJK fonts
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends fonts-noto-cjk
-          pip install -q -r requirements.txt
-
-      - name: Self-test the checker
-        run: python -m unittest discover -s tests
-
       - name: Collect, test and build report
         id: build
         env:
@@ -40,7 +31,7 @@ jobs:
         run: |
           date="$(TZ=Asia/Seoul date +%F)"
           echo "date=$date" >> "$GITHUB_OUTPUT"
-          python -m tracker --date "$date"
+          scripts/run_daily.sh --date "$date"
 
       - name: Commit report
         run: |

@@ -352,7 +352,17 @@ def find_chrome() -> str | None:
     return None
 
 
+def ensure_korean_font() -> None:
+    """한글 폰트가 없으면 글자가 깨진 PDF 가 조용히 만들어지므로 미리 막는다."""
+    if not shutil.which("fc-list"):
+        return
+    proc = subprocess.run(["fc-list", ":lang=ko", "family"], capture_output=True, text=True, timeout=30)
+    if proc.returncode == 0 and not proc.stdout.strip():
+        raise RuntimeError("한글 폰트가 없습니다 (예: apt-get install fonts-noto-cjk)")
+
+
 def html_to_pdf(html: str, pdf_path: str) -> None:
+    ensure_korean_font()
     chrome = find_chrome()
     if not chrome:
         raise RuntimeError("Chrome/Chromium 을 찾을 수 없습니다 (CHROME_BIN 으로 지정 가능)")
