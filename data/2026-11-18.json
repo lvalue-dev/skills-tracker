@@ -1,6 +1,6 @@
 {
  "date": "2026-11-18",
- "generated_at": "2026-11-18 23:26",
+ "generated_at": "2026-11-18 23:32",
  "timezone": "Asia/Seoul",
  "previous_date": null,
  "pool_size": 179,
@@ -33,12 +33,12 @@
     "touhou",
     "typescript"
    ],
-   "pushed_at": "2026-11-18T14:25:45Z",
+   "pushed_at": "2026-11-18T14:32:46Z",
    "created_at": "2026-04-14T00:51:32Z",
    "default_branch": "main",
    "size": 183019,
-   "stars": 467610,
-   "forks": 114350,
+   "stars": 467620,
+   "forks": 114351,
    "license": "MIT",
    "matched_queries": [
     "topic:agent-skills"
@@ -120,7 +120,7 @@
      "links": 15.0,
      "scripts": 15
     },
-    "commit": "6c3e9e0847f24850383450b4d04e5122c0da4f0e",
+    "commit": "7b02fec30b39e7b78aca9ab1ddf756fbba342eee",
     "issue_summary": [
      {
       "level": "warning",
@@ -145,7 +145,7 @@
    "created_at": "2026-02-03T11:15:53Z",
    "default_branch": "main",
    "size": 2421,
-   "stars": 327226,
+   "stars": 327227,
    "forks": 27480,
    "license": "MIT",
    "matched_queries": [
@@ -500,7 +500,7 @@
    "created_at": "2025-10-09T19:45:18Z",
    "default_branch": "main",
    "size": 8099,
-   "stars": 319765,
+   "stars": 319770,
    "forks": 28523,
    "license": "MIT",
    "matched_queries": [
@@ -662,8 +662,8 @@
    "created_at": "2026-01-18T00:51:51Z",
    "default_branch": "main",
    "size": 64399,
-   "stars": 306148,
-   "forks": 45067,
+   "stars": 306155,
+   "forks": 45070,
    "license": "MIT",
    "matched_queries": [
     "agent skills in:name,description",
@@ -1358,7 +1358,7 @@
    "created_at": "2025-09-22T15:53:31Z",
    "default_branch": "main",
    "size": 5542,
-   "stars": 197040,
+   "stars": 197041,
    "forks": 23085,
    "license": null,
    "matched_queries": [
@@ -1618,7 +1618,7 @@
    "created_at": "2026-06-12T00:52:37Z",
    "default_branch": "main",
    "size": 13130,
-   "stars": 193754,
+   "stars": 193760,
    "forks": 10897,
    "license": "MIT",
    "matched_queries": [
@@ -1770,7 +1770,7 @@
    "created_at": "2025-11-30T11:36:31Z",
    "default_branch": "main",
    "size": 8791,
-   "stars": 151188,
+   "stars": 151192,
    "forks": 15974,
    "license": "MIT",
    "matched_queries": [
@@ -2061,7 +2061,7 @@
    "created_at": "2026-04-04T10:03:00Z",
    "default_branch": "main",
    "size": 23123,
-   "stars": 121214,
+   "stars": 121215,
    "forks": 7085,
    "license": "Apache-2.0",
    "matched_queries": [
@@ -2324,26 +2324,26 @@
  "excluded": [
   {
    "full_name": "Graphify-Labs/graphify",
-   "stars": 149968,
+   "stars": 149972,
    "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"
   }
  ],
  "pool": [
   {
    "full_name": "morluto/rea",
-   "stars": 467610
+   "stars": 467620
   },
   {
    "full_name": "mattpocock/skills",
-   "stars": 327226
+   "stars": 327227
   },
   {
    "full_name": "obra/superpowers",
-   "stars": 319765
+   "stars": 319770
   },
   {
    "full_name": "affaan-m/ECC",
-   "stars": 306148
+   "stars": 306155
   },
   {
    "full_name": "multica-ai/andrej-karpathy-skills",
@@ -2351,19 +2351,19 @@
   },
   {
    "full_name": "anthropics/skills",
-   "stars": 197040
+   "stars": 197041
   },
   {
    "full_name": "DietrichGebert/ponytail",
-   "stars": 193754
+   "stars": 193760
   },
   {
    "full_name": "nextlevelbuilder/ui-ux-pro-max-skill",
-   "stars": 151188
+   "stars": 151192
   },
   {
    "full_name": "Graphify-Labs/graphify",
-   "stars": 149968
+   "stars": 149972
   },
   {
    "full_name": "Shubhamsaboo/awesome-llm-apps",
@@ -2371,47 +2371,47 @@
   },
   {
    "full_name": "JuliusBrussee/caveman",
-   "stars": 121214
+   "stars": 121215
   },
   {
    "full_name": "addyosmani/agent-skills",
-   "stars": 118845
+   "stars": 118848
   },
   {
    "full_name": "Leonxlnx/taste-skill",
-   "stars": 118174
+   "stars": 118180
   },
   {
    "full_name": "thedotmack/claude-mem",
-   "stars": 118156
+   "stars": 118159
   },
   {
    "full_name": "paperclipai/paperclip",
-   "stars": 114722
+   "stars": 114723
   },
   {
    "full_name": "pbakaus/impeccable",
-   "stars": 112658
+   "stars": 112661
   },
   {
    "full_name": "nexu-io/open-design",
-   "stars": 108264
+   "stars": 108267
   },
   {
    "full_name": "tt-a1i/archify",
-   "stars": 97663
+   "stars": 97664
   },
   {
    "full_name": "Egonex-AI/Understand-Anything",
-   "stars": 93130
+   "stars": 93129
   },
   {
    "full_name": "career-ops-hq/career-ops",
-   "stars": 83480
+   "stars": 83481
   },
   {
    "full_name": "OpenMontageInc/OpenMontage",
-   "stars": 81483
+   "stars": 81484
   },
   {
    "full_name": "ComposioHQ/awesome-claude-skills",
@@ -2419,7 +2419,7 @@
   },
   {
    "full_name": "cloudflare/security-audit-skill",
-   "stars": 75147
+   "stars": 75150
   },
   {
    "full_name": "code-yeongyu/oh-my-openagent",
@@ -2427,11 +2427,11 @@
   },
   {
    "full_name": "blader/humanizer",
-   "stars": 70664
+   "stars": 70666
   },
   {
    "full_name": "mvanhorn/last30days-skill",
-   "stars": 69666
+   "stars": 69671
   },
   {
    "full_name": "shanraisshan/claude-code-best-practice",
@@ -2443,7 +2443,7 @@
   },
   {
    "full_name": "ayghri/i-have-adhd",
-   "stars": 61595
+   "stars": 61596
   },
   {
    "full_name": "coreyhaines31/marketingskills",
@@ -2455,27 +2455,27 @@
   },
   {
    "full_name": "emilkowalski/skills",
-   "stars": 57918
+   "stars": 57924
   },
   {
    "full_name": "K-Dense-AI/scientific-agent-skills",
-   "stars": 57664
+   "stars": 57665
   },
   {
    "full_name": "Imbad0202/academic-research-skills",
-   "stars": 57465
+   "stars": 57466
   },
   {
    "full_name": "Nutlope/hallmark",
-   "stars": 57307
+   "stars": 57310
   },
   {
    "full_name": "alibaba/open-code-review",
-   "stars": 54107
+   "stars": 54111
   },
   {
    "full_name": "Yuan1z0825/nature-skills",
-   "stars": 54062
+   "stars": 54063
   },
   {
    "full_name": "VoltAgent/awesome-openclaw-skills",
@@ -2487,7 +2487,7 @@
   },
   {
    "full_name": "obsidianmd/obsidian-skills",
-   "stars": 53148
+   "stars": 53149
   },
   {
    "full_name": "sickn33/agentic-awesome-skills",
@@ -2551,11 +2551,11 @@
   },
   {
    "full_name": "vercel-labs/agent-skills",
-   "stars": 34464
+   "stars": 34465
   },
   {
    "full_name": "davila7/claude-code-templates",
-   "stars": 33956
+   "stars": 33957
   },
   {
    "full_name": "topoteretes/cognee",
@@ -2571,7 +2571,7 @@
   },
   {
    "full_name": "AgriciDaniel/claude-seo",
-   "stars": 30571
+   "stars": 30573
   },
   {
    "full_name": "alirezarezvani/claude-skills",
@@ -2583,7 +2583,7 @@
   },
   {
    "full_name": "alchaincyf/huashu-design",
-   "stars": 29802
+   "stars": 29803
   },
   {
    "full_name": "Ebazhanov/linkedin-skill-assessments-quizzes",
@@ -2595,7 +2595,7 @@
   },
   {
    "full_name": "yikart/AiToEarn",
-   "stars": 28297
+   "stars": 28298
   },
   {
    "full_name": "phuryn/pm-skills",
@@ -2607,7 +2607,7 @@
   },
   {
    "full_name": "JimLiu/baoyu-skills",
-   "stars": 27674
+   "stars": 27675
   },
   {
    "full_name": "NVIDIA/SkillSpector",
@@ -2627,19 +2627,19 @@
   },
   {
    "full_name": "liyupi/ai-guide",
-   "stars": 22202
+   "stars": 22201
   },
   {
    "full_name": "latent-spaces/brag",
-   "stars": 21897
+   "stars": 21898
   },
   {
    "full_name": "Vincentwei1021/video-shotcraft",
-   "stars": 21164
+   "stars": 21166
   },
   {
    "full_name": "google/elephant-goldfish-model",
-   "stars": 21013
+   "stars": 21015
   },
   {
    "full_name": "teng-lin/notebooklm-py",
@@ -2651,7 +2651,7 @@
   },
   {
    "full_name": "heydamir/unslop",
-   "stars": 18085
+   "stars": 18088
   },
   {
    "full_name": "composio-community/awesome-codex-skills",
@@ -2671,7 +2671,7 @@
   },
   {
    "full_name": "Orchestra-Research/AI-Research-SKILLs",
-   "stars": 14642
+   "stars": 14643
   },
   {
    "full_name": "NevaMind-AI/memU",
@@ -2711,7 +2711,7 @@
   },
   {
    "full_name": "kaomei/stickman-video-director",
-   "stars": 6897
+   "stars": 6898
   },
   {
    "full_name": "VoltAgent/awesome-codex-subagents",
@@ -2775,7 +2775,7 @@
   },
   {
    "full_name": "elementalsouls/Claude-OSINT",
-   "stars": 3081
+   "stars": 3082
   },
   {
    "full_name": "rohitg00/pro-workflow",
@@ -2783,7 +2783,7 @@
   },
   {
    "full_name": "alchaincyf/huashu-motion",
-   "stars": 2869
+   "stars": 2870
   },
   {
    "full_name": "wondelai/skills",
@@ -2903,7 +2903,7 @@
   },
   {
    "full_name": "jame581/GodotPrompter",
-   "stars": 973
+   "stars": 974
   },
   {
    "full_name": "unbrowse-ai/unbrowse",
