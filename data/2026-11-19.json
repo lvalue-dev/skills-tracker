@@ -5981,61 +5981,81 @@
    "full_name": "obra/superpowers",
    "stars": 321308,
    "delta": 1538,
-   "description": "An agentic skills framework & software development methodology that works."
+   "description": "An agentic skills framework & software development methodology that works.",
+   "rank": 3,
+   "prev_rank": 3
   },
   {
    "full_name": "morluto/rea",
    "stars": 468259,
    "delta": 639,
-   "description": "Reverse engineer anything with agents, from app behavior down to native binaries."
+   "description": "Reverse engineer anything with agents, from app behavior down to native binaries.",
+   "rank": 1,
+   "prev_rank": 1
   },
   {
    "full_name": "affaan-m/ECC",
    "stars": 306488,
    "delta": 333,
-   "description": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond."
+   "description": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
+   "rank": 4,
+   "prev_rank": 4
   },
   {
    "full_name": "mvanhorn/last30days-skill",
    "stars": 69987,
    "delta": 316,
-   "description": "AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a grounded summary"
+   "description": "AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a grounded summary",
+   "rank": 26,
+   "prev_rank": 26
   },
   {
    "full_name": "DietrichGebert/ponytail",
    "stars": 194021,
    "delta": 261,
-   "description": "Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote."
+   "description": "Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote.",
+   "rank": 7,
+   "prev_rank": 7
   },
   {
    "full_name": "pbakaus/impeccable",
    "stars": 112898,
    "delta": 237,
-   "description": "The design vocabulary for your coding agent. Steer with polish and bolder, review with critique and audit, catch AI slop before it ships."
+   "description": "The design vocabulary for your coding agent. Steer with polish and bolder, review with critique and audit, catch AI slop before it ships.",
+   "rank": 16,
+   "prev_rank": 16
   },
   {
    "full_name": "Leonxlnx/taste-skill",
    "stars": 118416,
    "delta": 236,
-   "description": "Agent skills that give coding agents taste: art direction, reference images and a browser check instead of generic AI pages"
+   "description": "Agent skills that give coding agents taste: art direction, reference images and a browser check instead of generic AI pages",
+   "rank": 13,
+   "prev_rank": 13
   },
   {
    "full_name": "mattpocock/skills",
    "stars": 327456,
    "delta": 229,
-   "description": "Skills for Real Engineers. Straight from my .agents directory."
+   "description": "Skills for Real Engineers. Straight from my .agents directory.",
+   "rank": 2,
+   "prev_rank": 2
   },
   {
    "full_name": "Nutlope/hallmark",
    "stars": 57532,
    "delta": 222,
-   "description": "Anti-AI-slop design skill for Claude Code, Cursor, and Codex."
+   "description": "Anti-AI-slop design skill for Claude Code, Cursor, and Codex.",
+   "rank": 35,
+   "prev_rank": 35
   },
   {
    "full_name": "cloudflare/security-audit-skill",
    "stars": 75370,
    "delta": 220,
-   "description": "A coding-agent skill for multi-phase security audits with independently verified, machine-readable findings"
+   "description": "A coding-agent skill for multi-phase security audits with independently verified, machine-readable findings",
+   "rank": 23,
+   "prev_rank": 23
   }
  ],
  "excluded": [
@@ -6766,5 +6786,6 @@
    "full_name": "blackwell-systems/agent-lsp",
    "stars": 181
   }
- ]
+ ],
+ "climbers": []
 }

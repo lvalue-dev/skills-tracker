@@ -79,13 +79,27 @@ def fmt_delta(delta) -> str:
 
 
 def rank_change(entry: dict) -> str:
+    """전일 대비 순위 변동 폭: ▲2(두 계단 상승) · ▼1 · –(변동 없음) · NEW(전일 목록에 없음)."""
     if entry.get("is_new"):
         return "NEW"
     prev = entry.get("prev_rank")
-    if prev is None:
+    if prev is None or entry.get("rank") is None:
         return "–"
     diff = prev - entry["rank"]
     return "–" if diff == 0 else (f"▲{diff}" if diff > 0 else f"▼{-diff}")
+
+
+def rank_path(entry: dict) -> str:
+    """순위가 바뀐 경우의 이동 경로 (예: 5위→3위). 변동이 없으면 빈 문자열."""
+    prev, rank = entry.get("prev_rank"), entry.get("rank")
+    if entry.get("is_new") or prev is None or rank is None or prev == rank:
+        return ""
+    return f"{prev}위→{rank}위"
+
+
+def rank_change_text(entry: dict) -> str:
+    path = rank_path(entry)
+    return f"{rank_change(entry)} ({path})" if path else rank_change(entry)
 
 
 def ratio(ok: int, total: int) -> str:
@@ -221,6 +235,10 @@ def _md_methods() -> list[str]:
     return out + [""]
 
 
+RANK_NOTE = ("순위는 그날 검색된 후보 풀 전체를 스타 순으로 줄 세운 값입니다. Top 표의 순위는 그중 "
+             "SKILL.md 를 가진 레포만 센 것이라 서로 다를 수 있습니다.")
+
+
 # ---------------------------------------------------------------- Markdown --
 
 def _md(text: str) -> str:
@@ -235,22 +253,33 @@ def build_markdown(snapshot: dict) -> str:
            f"스타 상위 {ov['repos']}개를 테스트 (스킬 {fmt_int(ov['skills'])}개, 평균 {ov['avg']}점)",
            f"- PDF: [{snapshot['date']}.pdf]({snapshot['date']}.pdf)", "",
            "## 스타 상위 Top " + str(ov["repos"]), "",
-           "| # | 변동 | 레포 | ★ 스타 | 전일 대비 | 스킬 수 | 점수 | 등급 |",
+           "| # | 순위 변동 | 레포 | ★ 스타 | 전일 대비 | 스킬 수 | 점수 | 등급 |",
            "|--:|:--:|---|--:|--:|--:|--:|:--:|"]
     for e in snapshot["top"]:
         t = e["test"]
-        out.append(f"| {e['rank']} | {rank_change(e)} | [{e['full_name']}]({e['html_url']}) | "
+        out.append(f"| {e['rank']} | {rank_change_text(e)} | [{e['full_name']}]({e['html_url']}) | "
                    f"{fmt_int(e['stars'])} | {fmt_delta(e.get('stars_delta'))} | "
                    f"{fmt_int(t['counts']['skills'])} | {t['score']} | {t['grade']} |")
     out.append("")
     out += _md_matrix(snapshot)
     if snapshot.get("rising"):
         out += ["## 급상승 (전일 대비 스타 증가)", "",
-                "| 레포 | ★ 스타 | 증가 | 설명 |", "|---|--:|--:|---|"]
+                "| 레포 | 순위 | 순위 변동 | ★ 스타 | 증가 | 설명 |", "|---|--:|:--:|--:|--:|---|"]
         for r in snapshot["rising"]:
-            out.append(f"| [{r['full_name']}](https://github.com/{r['full_name']}) | "
-                       f"{fmt_int(r['stars'])} | {fmt_delta(r['delta'])} | {_md(clip(r['description'], 90))} |")
+            out.append(f"| [{r['full_name']}](https://github.com/{r['full_name']}) | {r.get('rank') or '–'} | "
+                       f"{rank_change_text(r)} | {fmt_int(r['stars'])} | {fmt_delta(r['delta'])} | "
+                       f"{_md(clip(r['description'], 90))} |")
         out.append("")
+    if snapshot.get("previous_date"):
+        out += ["## 순위 상승 (전일 대비)", ""]
+        if snapshot.get("climbers"):
+            out += ["| 레포 | 상승 폭 | 순위 | ★ 스타 | 증가 |", "|---|:--:|:--:|--:|--:|"]
+            out += [f"| [{c['full_name']}](https://github.com/{c['full_name']}) | {rank_change(c)} | "
+                    f"{rank_path(c)} | {fmt_int(c['stars'])} | {fmt_delta(c['delta'])} |"
+                    for c in snapshot["climbers"]]
+        else:
+            out.append(f"{snapshot['previous_date']} 대비 순위가 오른 레포가 없습니다.")
+        out += ["", RANK_NOTE, ""]
     out += ["## 레포별 활용 가이드와 테스트 결과" if has_guides(snapshot) else "## 레포별 테스트 결과", ""]
     for e in snapshot["top"]:
         t, c = e["test"], e["test"]["counts"]
@@ -311,6 +340,7 @@ tr { break-inside: avoid; }
 .desc { color: #5a6873; font-size: 7.8pt; overflow-wrap: anywhere; }
 .up { color: #0b6e69; font-weight: 700; } .down { color: #b3402a; font-weight: 700; }
 .new { color: #8a5a00; font-weight: 700; font-size: 7.4pt; }
+.path { color: #5a6873; font-size: 7pt; line-height: 1.3; }
 .grade { display: inline-block; min-width: 15pt; text-align: center; border-radius: 3pt; padding: 0 4pt;
   font-weight: 700; color: #fff; }
 .gA { background: #0b6e69; } .gB { background: #3a6ea5; } .gC { background: #a8730a; } .gD { background: #b3402a; }
@@ -475,7 +505,9 @@ def _methods_html() -> str:
 def _change_html(entry: dict) -> str:
     text = rank_change(entry)
     cls = {"N": "new", "▲": "up", "▼": "down"}.get(text[0], "none")
-    return f'<span class="{cls}">{escape(text)}</span>'
+    path = rank_path(entry)
+    detail = f'<div class="path">{escape(path)}</div>' if path else ""
+    return f'<span class="{cls}">{escape(text)}</span>{detail}'
 
 
 def _delta_html(delta) -> str:
@@ -541,15 +573,31 @@ def build_html(snapshot: dict) -> str:
         rising_rows = "".join(
             f'<tr><td><div class="repo">{escape(r["full_name"])}</div>'
             f'<div class="desc">{escape(clip(r["description"], 120))}</div></td>'
+            f'<td class="num">{r.get("rank") or "–"}</td><td class="ctr">{_change_html(r)}</td>'
             f'<td class="num">{fmt_int(r["stars"])}</td><td class="num">{_delta_html(r["delta"])}</td></tr>'
             for r in snapshot["rising"])
         rising = (f'<h2>급상승 — {escape(snapshot["previous_date"])} 대비 스타 증가</h2><table><thead><tr><th>레포</th>'
+                  f'<th class="num">순위</th><th class="ctr">순위 변동</th>'
                   f'<th class="num">★ 스타</th><th class="num">증가</th></tr></thead><tbody>{rising_rows}</tbody></table>')
     elif snapshot.get("previous_date"):
         rising = ""
     else:
         rising = ('<h2>급상승</h2><p class="note">오늘이 첫 수집일이라 비교 대상이 없습니다. '
                   '다음 리포트부터 전일 대비 스타 증가 상위 레포가 표시됩니다.</p>')
+    if snapshot.get("previous_date"):
+        if snapshot.get("climbers"):
+            climb_rows = "".join(
+                f'<tr><td class="repo">{escape(c["full_name"])}</td>'
+                f'<td class="ctr"><span class="up">{escape(rank_change(c))}</span></td>'
+                f'<td class="ctr">{escape(rank_path(c))}</td>'
+                f'<td class="num">{fmt_int(c["stars"])}</td><td class="num">{_delta_html(c["delta"])}</td></tr>'
+                for c in snapshot["climbers"])
+            climbers = ('<table><thead><tr><th>레포</th><th class="ctr">상승 폭</th><th class="ctr">순위</th>'
+                        f'<th class="num">★ 스타</th><th class="num">증가</th></tr></thead><tbody>{climb_rows}</tbody></table>')
+        else:
+            climbers = f'<p class="note">{escape(snapshot["previous_date"])} 대비 순위가 오른 레포가 없습니다.</p>'
+        rising += (f'<h2>순위 상승 — {escape(snapshot["previous_date"])} 대비</h2>{climbers}'
+                   f'<p class="note" style="margin-top:5pt">{escape(RANK_NOTE)}</p>')
     excluded = ""
     if snapshot.get("excluded"):
         ex_rows = "".join(f'<tr><td class="repo">{escape(x["full_name"])}</td><td class="num">{fmt_int(x["stars"])}</td>'
@@ -576,7 +624,7 @@ def build_html(snapshot: dict) -> str:
 </div>
 {warn}
 <h2>스타 상위 Top {ov['repos']}</h2>
-<table><thead><tr><th class="num">#</th><th class="ctr">변동</th><th>레포</th><th class="num">★ 스타</th>
+<table><thead><tr><th class="num">#</th><th class="ctr">순위 변동</th><th>레포</th><th class="num">★ 스타</th>
 <th class="num">전일 대비</th><th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>
 <tbody>{rows}</tbody></table>
 {_matrix_html(snapshot)}

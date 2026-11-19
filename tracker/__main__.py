@@ -51,6 +51,30 @@ def apply_history(top: list[dict], pool: list[dict], previous: dict | None) -> l
     return rising[:10]
 
 
+def apply_pool_ranks(rising: list[dict], pool: list[dict], previous: dict | None,
+                     limit: int = 10) -> list[dict]:
+    """후보 풀(스타 내림차순) 순위를 전일과 비교한다.
+
+    급상승 항목에 오늘·전일 순위를 채우고, 순위가 오른 레포를 상승 폭 순으로 돌려준다.
+    pool 항목은 full_name·stars 만 있으면 되므로 저장된 스냅샷으로도 다시 계산할 수 있다.
+    """
+    if not previous:
+        return []
+    rank = {r["full_name"]: i + 1 for i, r in enumerate(pool)}
+    prev_pool = previous.get("pool", [])
+    prev_rank = {r["full_name"]: i + 1 for i, r in enumerate(prev_pool)}
+    prev_stars = {r["full_name"]: r["stars"] for r in prev_pool}
+    for entry in rising:
+        entry["rank"] = rank.get(entry["full_name"])
+        entry["prev_rank"] = prev_rank.get(entry["full_name"])
+    climbers = [{"full_name": r["full_name"], "stars": r["stars"],
+                 "delta": r["stars"] - prev_stars[r["full_name"]],
+                 "rank": rank[r["full_name"]], "prev_rank": prev_rank[r["full_name"]]}
+                for r in pool if prev_rank.get(r["full_name"], 0) > rank[r["full_name"]]]
+    climbers.sort(key=lambda c: (c["rank"] - c["prev_rank"], c["rank"]))
+    return climbers[:limit]
+
+
 def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]]:
     """스타 순으로 내려가며 SKILL.md 를 가진 레포 top_n 개를 테스트한다."""
     top, excluded = [], []
@@ -136,8 +160,15 @@ def main() -> int:
     os.makedirs(reports_dir, exist_ok=True)
 
     if args.render_only:
-        with open(os.path.join(data_dir, f"{date}.json"), encoding="utf-8") as fh:
-            write_reports(json.load(fh), reports_dir, args.skip_pdf)
+        path = os.path.join(data_dir, f"{date}.json")
+        with open(path, encoding="utf-8") as fh:
+            snapshot = json.load(fh)
+        if "climbers" not in snapshot:  # 순위 비교가 없던 시절의 스냅샷은 저장된 풀로 채운다
+            snapshot["climbers"] = apply_pool_ranks(snapshot.get("rising", []), snapshot["pool"],
+                                                    load_previous(data_dir, date))
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(snapshot, fh, ensure_ascii=False, indent=1)
+        write_reports(snapshot, reports_dir, args.skip_pdf)
         return 0
 
     pool, failures = collect.collect_pool(cfg)
@@ -147,12 +178,13 @@ def main() -> int:
         return 1
     previous = load_previous(data_dir, date)
     rising = apply_history(top, pool, previous)
+    climbers = apply_pool_ranks(rising, pool, previous)
 
     snapshot = {
         "date": date, "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": cfg["timezone"],
         "previous_date": previous["date"] if previous else None,
         "pool_size": len(pool), "search_failures": failures, "guide_meta": {**guide.meta(), "llm_model": summarize.model_name()},
-        "top": top, "rising": rising, "excluded": excluded,
+        "top": top, "rising": rising, "climbers": climbers, "excluded": excluded,
         "pool": [{"full_name": r["full_name"], "stars": r["stars"]} for r in pool],
     }
     with open(os.path.join(data_dir, f"{date}.json"), "w", encoding="utf-8") as fh:

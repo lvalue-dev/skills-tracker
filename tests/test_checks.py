@@ -10,7 +10,7 @@ import datetime as dt  # noqa: E402
 from unittest import mock  # noqa: E402
 
 from tracker import checks, collect, fetch, report, schedule  # noqa: E402
-from tracker.__main__ import apply_history  # noqa: E402
+from tracker.__main__ import apply_history, apply_pool_ranks  # noqa: E402
 
 LIMITS = {"max_file_bytes": 524288, "max_scripts_per_repo": 400}
 GOOD = """---
@@ -200,6 +200,35 @@ class RepoLevelTests(unittest.TestCase):
         self.assertEqual([(r["full_name"], r["delta"]) for r in rising], [("a/a", 50), ("c/c", 30)])
         self.assertEqual(report.rank_change(top[0]), "▲1")
         self.assertEqual(report.rank_change(top[1]), "NEW")
+        self.assertEqual(report.rank_change_text(top[0]), "▲1 (2위→1위)")
+        self.assertEqual(report.rank_change_text(top[1]), "NEW")
+
+    def test_pool_rank_changes(self):
+        pool = [{"full_name": n, "stars": s} for n, s in
+                [("a/a", 900), ("d/d", 500), ("b/b", 450), ("new/new", 300), ("c/c", 100)]]
+        previous = {"date": "2026-01-01", "pool": [{"full_name": n, "stars": s} for n, s in
+                                                   [("a/a", 880), ("b/b", 440), ("c/c", 95), ("d/d", 90)]]}
+        rising = [{"full_name": "d/d", "stars": 500, "delta": 410, "description": ""},
+                  {"full_name": "a/a", "stars": 900, "delta": 20, "description": ""},
+                  {"full_name": "b/b", "stars": 450, "delta": 10, "description": ""}]
+        climbers = apply_pool_ranks(rising, pool, previous)
+        self.assertEqual([(r["prev_rank"], r["rank"]) for r in rising], [(4, 2), (1, 1), (2, 3)])
+        self.assertEqual([report.rank_change_text(r) for r in rising], ["▲2 (4위→2위)", "–", "▼1 (2위→3위)"])
+        # 순위가 오른 레포만, 상승 폭 순으로. 새로 들어온 레포와 밀려난 레포는 빠진다.
+        self.assertEqual([(c["full_name"], c["prev_rank"], c["rank"], c["delta"]) for c in climbers],
+                         [("d/d", 4, 2, 410)])
+        self.assertEqual(apply_pool_ranks([], pool, None), [])
+        snapshot = {"date": "2026-01-02", "generated_at": "2026-01-02 08:00", "timezone": "Asia/Seoul",
+                    "previous_date": "2026-01-01", "pool_size": 5, "search_failures": [], "top": [],
+                    "rising": rising, "climbers": climbers, "excluded": []}
+        markdown = report.build_markdown(snapshot)
+        self.assertIn("| [d/d](https://github.com/d/d) | 2 | ▲2 (4위→2위) | 500 | +410 |", markdown)
+        self.assertIn("| [d/d](https://github.com/d/d) | ▲2 | 4위→2위 | 500 | +410 |", markdown)
+        html = report.build_html(snapshot)
+        self.assertIn("4위→2위", html)
+        snapshot["climbers"] = []
+        self.assertIn("순위가 오른 레포가 없습니다", report.build_markdown(snapshot))
+        self.assertIn("순위가 오른 레포가 없습니다", report.build_html(snapshot))
 
 
 class HomeServerTests(unittest.TestCase):
