@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 from collections import Counter
 from html import escape
+
+from . import guide as guide_mod
 
 ISSUE_KINDS = [
     ("깨진 상대 링크", "깨진 상대 링크"),
@@ -101,6 +104,123 @@ def overview(snapshot: dict) -> dict:
             "grades": Counter(e["test"]["grade"] for e in top), "high_flag_kinds": high}
 
 
+# ------------------------------------------------------------- 활용 가이드 --
+
+def guide_of(entry: dict) -> dict | None:
+    """스냅샷의 활용 가이드 (이 기능 이전에 만든 스냅샷에는 없다)."""
+    return (entry.get("test") or {}).get("guide") or None
+
+
+def has_guides(snapshot: dict) -> bool:
+    return any(guide_of(e) for e in snapshot["top"])
+
+
+def is_ai(note: dict) -> bool:
+    return note.get("source") == "llm"
+
+
+def auto_summary(g: dict) -> str:
+    cats = ", ".join(f"{c['label']} {c['count']}" for c in g.get("categories", [])[:4])
+    copies = f" (복사본·번역본 {fmt_int(g['copies'])}개 제외)" if g.get("copies") else ""
+    return f"{g.get('kind', '스킬 레포')} · 고유 스킬 {fmt_int(g.get('unique_skills', 0))}개{copies} · 주요 분야: {cats or '분류 없음'}"
+
+
+def how_text(cli: dict) -> str:
+    """적용 방법 한 줄 (Markdown 표기)."""
+    if cli.get("how_kind") == "section":
+        return "README 의 설치 안내 참고"
+    cmds = " → ".join(f"`{c}`" for c in cli.get("how", []))
+    return ("(일반) " if cli.get("how_kind") == "generic" else "") + cmds
+
+
+def portability_text(compat: dict) -> str:
+    """전용 기능 사용 요약. hard = 다른 CLI 에서 동작이 달라질 수 있는 기능, 나머지는 무시되는 확장 키."""
+    p = compat.get("portable") or {}
+    if not p.get("total"):
+        return ""
+    parts = [f"고유 스킬 {fmt_int(p['total'])}개 중 {fmt_int(p['clean'])}개는 다른 CLI 에서 동작이 달라질 전용 기능을 쓰지 않음"]
+    feats = compat.get("features", [])
+    hard = ", ".join(f"`{f['key']}` ×{f['count']}" for f in feats if f.get("hard"))
+    soft = ", ".join(f"`{f['key']}` ×{f['count']}" for f in feats if not f.get("hard"))
+    if hard:
+        parts.append(f"전용 기능: {hard}")
+    if soft:
+        parts.append(f"확장 키(지원하지 않는 CLI 는 무시): {soft}")
+    return " · ".join(parts)
+
+
+def _md_guide(e: dict) -> list[str]:
+    g = guide_of(e)
+    if not g:
+        return []
+    note, compat = g.get("note") or {}, g.get("compat") or {}
+    if note.get("summary"):
+        out = [f"**어떤 스킬인가**{' (AI 요약)' if is_ai(note) else ''} — {note['summary']}", ""]
+    else:
+        out = [f"**어떤 스킬인가** (자동 분석) — {auto_summary(g)}", ""]
+    whens = note.get("use_when") or [w + " (자동 분류)" for w in g.get("situations", [])]
+    if whens:
+        out += ["**이럴 때 쓴다**", ""] + [f"- {w}" for w in whens] + [""]
+    if note.get("caution"):
+        out += ["**알아둘 점**", ""] + [f"- {w}" for w in note["caution"]] + [""]
+    if note.get("highlights"):
+        out += ["**주요 스킬**", ""] + [f"- `{h['skill']}` — {h['note']}" for h in note["highlights"]] + [""]
+    else:
+        shown = [s for s in g.get("skills", []) if s.get("what") or s.get("when")][:5]
+        if shown:
+            out += ["**주요 스킬** (원문 설명)", ""]
+            for sk in shown:
+                when = f" / 언제: {_md(clip(sk['when'], 150))}" if sk.get("when") else ""
+                out.append(f"- `{sk['name']}` — {_md(clip(sk['what'], 130))}{when}")
+            out.append("")
+    if compat.get("clis"):
+        out += [f"**CLI 별 적용** — 최적화 대상: **{compat.get('optimized_label', '–')}**", "",
+                "| CLI | 수준 | 적용 방법 | 근거 |", "|---|---|---|---|"]
+        for cli in compat["clis"]:
+            level = cli["level"]
+            evidence = ", ".join(cli.get("evidence", [])[:3] + cli.get("caveats", [])[:1]) or "표준 SKILL.md"
+            out.append(f"| {cli['label']} | {guide_mod.LEVEL_MARK[level]} {guide_mod.LEVEL_LABEL[level]} | "
+                       f"{_md(how_text(cli))} | {_md(evidence)} |")
+        out.append("")
+        extra = [x for x in (note.get("cli"), portability_text(compat)) if x]
+        out += [f"- {x}" for x in extra] + ([""] if extra else [])
+    return out
+
+
+def _md_matrix(snapshot: dict) -> list[str]:
+    if not has_guides(snapshot):
+        return []
+    facts = guide_mod.CLI_FACTS
+    out = ["## CLI 호환성 한눈에", "",
+           "● 전용 지원 · ○ 적용 가능 · △ 일부 제한 (판정 기준은 맨 아래 ‘방법과 한계’)", "",
+           "| # | 레포 | " + " | ".join(f["short"] for f in facts) + " | 최적화 대상 |",
+           "|--:|---|" + ":--:|" * len(facts) + "---|"]
+    for e in snapshot["top"]:
+        g = guide_of(e)
+        if not g:
+            continue
+        levels = {c["id"]: c["level"] for c in g["compat"]["clis"]}
+        cells = " | ".join(guide_mod.LEVEL_MARK.get(levels.get(f["id"]), "–") for f in facts)
+        out.append(f"| {e['rank']} | {e['full_name']} | {cells} | {g['compat'].get('optimized_label', '–')} |")
+    return out + [""]
+
+
+def _md_methods() -> list[str]:
+    out = ["- 활용 가이드: ‘어떤 스킬인가·이럴 때 쓴다’는 README·SKILL.md 를 읽고 정리한 요약"
+           f"({guide_mod.load_notes().get('updated') or '날짜 미상'} 기준)이며, 요약이 없는 레포는 "
+           "LLM 이 README·SKILL.md 설명을 요약한 ‘AI 요약’(사람이 검토하지 않음, LLM 설정이 있을 때만) "
+           "또는 SKILL.md description 과 키워드 분류로 만든 자동 분석으로 표시함.",
+           "- CLI 수준: " + " / ".join(f"{guide_mod.LEVEL_MARK[k]} {guide_mod.LEVEL_LABEL[k]} = {v}"
+                                     for k, v in guide_mod.LEVEL_HELP.items()) + ".",
+           "- 최적화 대상: 매니페스트·스킬 위치·README 설치 안내·전용 기능 사용을 점수화한 추정. 실제로 각 CLI 에서 "
+           "실행해 본 결과가 아님. 다른 CLI 에서 안 되는 기능이라는 판단은 그 CLI 공식 문서에 해당 기능이 없다는 데서 온 추론임.",
+           "- ‘(일반)’ 적용 방법은 `npx skills add`(vercel-labs/skills) 기준의 일반 절차로, 레포별로 검증하지 않음.", "",
+           f"### CLI 별 스킬 위치 (공식 문서, {guide_mod.FACTS_VERIFIED} 확인)", "",
+           "| CLI | 스킬을 읽는 위치 | 묶음(패키징) | 출처 |", "|---|---|---|---|"]
+    out += [f"| {f['label']} | {f['where']} | {f['package']} | {f['source']} |" for f in guide_mod.CLI_FACTS]
+    return out + [""]
+
+
 # ---------------------------------------------------------------- Markdown --
 
 def _md(text: str) -> str:
@@ -123,6 +243,7 @@ def build_markdown(snapshot: dict) -> str:
                    f"{fmt_int(e['stars'])} | {fmt_delta(e.get('stars_delta'))} | "
                    f"{fmt_int(t['counts']['skills'])} | {t['score']} | {t['grade']} |")
     out.append("")
+    out += _md_matrix(snapshot)
     if snapshot.get("rising"):
         out += ["## 급상승 (전일 대비 스타 증가)", "",
                 "| 레포 | ★ 스타 | 증가 | 설명 |", "|---|--:|--:|---|"]
@@ -130,12 +251,14 @@ def build_markdown(snapshot: dict) -> str:
             out.append(f"| [{r['full_name']}](https://github.com/{r['full_name']}) | "
                        f"{fmt_int(r['stars'])} | {fmt_delta(r['delta'])} | {_md(clip(r['description'], 90))} |")
         out.append("")
-    out += ["## 레포별 테스트 결과", ""]
+    out += ["## 레포별 활용 가이드와 테스트 결과" if has_guides(snapshot) else "## 레포별 테스트 결과", ""]
     for e in snapshot["top"]:
         t, c = e["test"], e["test"]["counts"]
         out += [f"### {e['rank']}. {e['full_name']} — {t['grade']} ({t['score']}점)", "",
-                f"> {_md(e['description']) or '(설명 없음)'}", "",
-                f"- ★ {fmt_int(e['stars'])} · 포크 {fmt_int(e['forks'])} · 라이선스 {e.get('license') or '미표기'}"
+                f"> {_md(e['description']) or '(설명 없음)'}", ""]
+        out += _md_guide(e)
+        out += ([f"**테스트 결과**", ""] if guide_of(e) else [])
+        out += [f"- ★ {fmt_int(e['stars'])} · 포크 {fmt_int(e['forks'])} · 라이선스 {e.get('license') or '미표기'}"
                 f" · 최근 푸시 {(e.get('pushed_at') or '')[:10]} · 검사 커밋 `{(t.get('commit') or '')[:7]}`",
                 f"- 규격 통과 {ratio(c['spec_pass'], c['skills'])} · 권고까지 무결 {ratio(c['clean'], c['skills'])}",
                 f"- 상대 링크 정상 {ratio(c['links_total'] - c['links_broken'], c['links_total'])}"
@@ -154,7 +277,8 @@ def build_markdown(snapshot: dict) -> str:
             "- 수집: GitHub 검색 API(GET)만 사용, 스타 내림차순. 다른 레포에 대한 쓰기 동작(star·fork·issue·PR·댓글)은 없음.",
             "- 테스트: 얕은 스파스 클론 후 정적 검사만 수행. 내려받은 코드는 실행하지 않음.",
             "- 점수(규격 55 + 품질 권고 15 + 링크 15 + 스크립트 15)는 규격 준수·무결성을 잰 것으로, 스킬의 실제 효용을 보증하지 않음.",
-            "- 안전 신호는 사람이 확인할 위치를 알려주는 표시이며 악성 판정이 아님. 오탐이 섞이므로 점수에 반영하지 않음.", ""]
+            "- 안전 신호는 사람이 확인할 위치를 알려주는 표시이며 악성 판정이 아님. 오탐이 섞이므로 점수에 반영하지 않음."]
+    out += _md_methods() if has_guides(snapshot) else [""]
     return "\n".join(out)
 
 
@@ -210,7 +334,142 @@ ul { margin: 0; padding-left: 11pt; } li { margin-bottom: 2pt; overflow-wrap: an
 code { font-family: "DejaVu Sans Mono", "Noto Sans Mono CJK KR", monospace; font-size: 7.4pt; color: #44525d; }
 .none { color: #7a8791; }
 .note { color: #44525d; font-size: 8.4pt; } .note li { margin-bottom: 3pt; }
+.card.long { break-inside: auto; } .card.long h3, .card h4 { break-after: avoid; }
+.blk { break-inside: avoid; } .clit tr, .matrix tr { break-inside: avoid; }
+.sect { break-inside: avoid; }
+.guide { border-top: 0.5pt solid #e1e6ea; border-bottom: 0.5pt solid #e1e6ea; padding: 7pt 0 6pt; margin: 0 0 8pt; }
+.gsum { margin: 0 0 6pt; font-size: 9.6pt; }
+.t-ko { background: #d9eeec; color: #0b5551; } .t-auto { background: #e4e9ed; color: #44525d; }
+.t-ai { background: #ece6f6; color: #4b3a7a; }
+.guide .cols { margin-bottom: 6pt; }
+.card h4 { margin: 0 0 3pt; font-size: 7.8pt; color: #5a6873; letter-spacing: 0.04em; }
+.card h4 b { color: #1b2733; font-size: 8.6pt; letter-spacing: 0; }
+.lv { display: inline-block; font-size: 7.2pt; font-weight: 700; border-radius: 2.5pt; padding: 0.5pt 4pt; white-space: nowrap; }
+.lv-native { background: #0b6e69; color: #fff; } .lv-ok { background: #e4e9ed; color: #1b2733; }
+.lv-limited { background: #f4e7c8; color: #6f4a00; }
+.clit { font-size: 7.8pt; } .clit td { padding: 2.5pt 5pt; } .clit td:first-child { white-space: nowrap; font-weight: 700; }
+.clit .ev { color: #5a6873; }
+.matrix { table-layout: fixed; } .matrix th:first-child { width: 4%; } .matrix th:nth-child(2) { width: 28%; }
+.matrix th:last-child { width: 21%; } .matrix td { padding-top: 4pt; padding-bottom: 4pt; }
+.matrix td, .matrix th { text-align: center; } .matrix td:nth-child(2), .matrix th:nth-child(2),
+.matrix td:last-child, .matrix th:last-child { text-align: left; }
+.legend { color: #5a6873; font-size: 7.8pt; margin: 5pt 0 0; } .legend .lv { margin: 0 3pt 0 8pt; }
+.legend .lv:first-child { margin-left: 0; }
+.facts { font-size: 7.8pt; margin-top: 6pt; } .facts td:first-child { white-space: nowrap; font-weight: 700; }
 """
+
+
+def _inline(text: str) -> str:
+    """escape 후 `백틱` 구간만 <code> 로 바꾼다."""
+    return re.sub(r"`([^`]+)`", r"<code>\1</code>", escape(text or ""))
+
+
+def _lv(level: str, short: bool = False) -> str:
+    label = {"native": "전용", "ok": "가능", "limited": "제한"}[level] if short else guide_mod.LEVEL_LABEL[level]
+    return f'<span class="lv lv-{level}">{guide_mod.LEVEL_MARK[level]} {label}</span>'
+
+
+def _guide_html(e: dict) -> str:
+    g = guide_of(e)
+    if not g:
+        return ""
+    note, compat = g.get("note") or {}, g.get("compat") or {}
+    if note.get("summary"):
+        tag = '<span class="tag t-ai">AI 요약</span>' if is_ai(note) else '<span class="tag t-ko">요약</span>'
+        summary = tag + _inline(note["summary"])
+    else:
+        summary = f'<span class="tag t-auto">자동 분석</span>{escape(auto_summary(g))}'
+    whens = note.get("use_when") or g.get("situations", [])
+    auto = "" if note.get("use_when") else ' <span class="tag t-auto">자동 분류</span>'
+    left = (f'<div><h4>이럴 때 쓴다{auto}</h4><ul>' + "".join(f"<li>{_inline(w)}</li>" for w in whens)
+            + "</ul></div>") if whens else "<div></div>"
+    if note.get("caution"):
+        right = "<div><h4>알아둘 점</h4><ul>" + "".join(f"<li>{_inline(w)}</li>" for w in note["caution"]) + "</ul></div>"
+    else:
+        cats = "".join(f"<li>{escape(c['label'])} <span class='none'>{c['count']}개</span></li>"
+                       for c in g.get("categories", [])[:5])
+        right = f"<div><h4>분야별 스킬 수</h4><ul>{cats}</ul></div>"
+    rows = ""
+    for cli in compat.get("clis", []):
+        if cli.get("how_kind") == "section":
+            how = '<span class="ev">README 의 설치 안내 참고</span>'
+        else:
+            how = "<br>".join(f"<code>{escape(c)}</code>" for c in cli.get("how", []))
+            if cli.get("how_kind") == "generic":
+                how = '<span class="tag t-auto">일반</span>' + how
+        evidence = ", ".join(cli.get("evidence", [])[:3] + cli.get("caveats", [])[:1]) or "표준 SKILL.md"
+        rows += (f'<tr><td>{escape(cli["label"])}</td><td>{_lv(cli["level"])}</td><td>{how}</td>'
+                 f'<td class="ev">{_inline(evidence)}</td></tr>')
+    extra = " · ".join(x for x in (note.get("cli"), portability_text(compat)) if x)
+    table = ""
+    if rows:
+        table = (f'<div><h4>CLI 별 적용 — 최적화 대상 <b>{escape(compat.get("optimized_label", "–"))}</b></h4>'
+                 f'<table class="clit"><tbody>{rows}</tbody></table>'
+                 + (f'<p class="desc" style="margin:4pt 0 0">{_inline(extra)}</p>' if extra else "") + "</div>")
+    return (f'<div class="guide"><div class="blk"><p class="gsum">{summary}</p>'
+            f'<div class="cols">{left}{right}</div></div>{table}</div>')
+
+
+def _skills_html(e: dict) -> tuple[str, str]:
+    """(제목, <li>…) — 활용 가이드가 있으면 무엇/언제 중심으로 보여 준다."""
+    t, c = e["test"], e["test"]["counts"]
+    g = guide_of(e)
+    if not g:
+        items = "".join(
+            f'<li><b>{escape(clip(s["name"], 48))}</b> <span class="desc">{escape(clip(s["description"], 88))}'
+            f'</span></li>' for s in t["skills"][:4])
+        more = c["skills"] - min(len(t["skills"]), 4)
+        return "수록 스킬 예시", items + (f'<li class="none">외 {fmt_int(more)}개</li>' if more > 0 else "")
+    note = g.get("note") or {}
+    if note.get("highlights"):
+        shown = note["highlights"][:6]
+        items = "".join(f'<li><b>{escape(h["skill"])}</b> — {_inline(h["note"])}</li>' for h in shown)
+        title = "주요 스킬"
+    else:
+        shown = [s for s in g.get("skills", []) if s.get("what") or s.get("when")][:4]
+        items = ""
+        for sk in shown:
+            cat = guide_mod.CAT_LABEL.get((sk.get("cats") or ["etc"])[0], "기타")
+            when = f'<br><span class="desc">언제: {escape(clip(sk["when"], 120))}</span>' if sk.get("when") else ""
+            items += (f'<li><b>{escape(clip(sk["name"], 40))}</b> <span class="tag t-auto">{escape(cat)}</span>'
+                      f'<span class="desc">{escape(clip(sk["what"], 100))}</span>{when}</li>')
+        title = "주요 스킬 (원문 설명)"
+    more = g.get("unique_skills", 0) - len(shown)
+    return title, items + (f'<li class="none">외 {fmt_int(more)}개</li>' if more > 0 else "")
+
+
+def _matrix_html(snapshot: dict) -> str:
+    if not has_guides(snapshot):
+        return ""
+    facts = guide_mod.CLI_FACTS
+    head = "".join(f"<th>{escape(f['short'])}</th>" for f in facts)
+    rows = ""
+    for e in snapshot["top"]:
+        g = guide_of(e)
+        if not g:
+            continue
+        levels = {c["id"]: c["level"] for c in g["compat"]["clis"]}
+        cells = "".join(f"<td>{_lv(levels[f['id']], short=True) if f['id'] in levels else '–'}</td>" for f in facts)
+        rows += (f'<tr><td class="num">{e["rank"]}</td><td><div class="repo">{escape(e["full_name"])}</div>'
+                 f'<div class="desc">{escape(g.get("kind", ""))} · 고유 스킬 {fmt_int(g.get("unique_skills", 0))}개</div></td>'
+                 f'{cells}<td><b>{escape(g["compat"].get("optimized_label", "–"))}</b></td></tr>')
+    legend = "".join(f'{_lv(k)} {escape(v)}<br>' for k, v in guide_mod.LEVEL_HELP.items())
+    return (f'<div class="sect"><h2>CLI 호환성 한눈에</h2><table class="matrix"><thead><tr><th class="num">#</th><th>레포</th>{head}'
+            f'<th>최적화 대상</th></tr></thead><tbody>{rows}</tbody></table>'
+            f'<p class="legend">{legend}최적화 대상은 레포에 들어 있는 패키징·설치 안내·전용 기능 사용을 근거로 한 추정이며, '
+            '각 CLI 에서 실제로 실행해 본 결과가 아닙니다.</p></div>')
+
+
+def _methods_html() -> str:
+    rows = "".join(f'<tr><td>{escape(f["label"])}</td><td>{_inline(f["where"])}</td><td>{_inline(f["package"])}</td></tr>'
+                   for f in guide_mod.CLI_FACTS)
+    updated = escape(guide_mod.load_notes().get("updated") or "날짜 미상")
+    return f"""<li><b>활용 가이드</b> — ‘요약·이럴 때 쓴다·알아둘 점’은 각 레포의 README 와 SKILL.md 를 읽고 정리한 것입니다({updated} 기준). 요약이 아직 없는 레포는 LLM 이 README 와 SKILL.md 설명을 요약한 <span class="tag t-ai">AI 요약</span>(사람이 검토하지 않은 글, LLM 설정이 있을 때만) 또는 SKILL.md description 과 키워드 분류로 만든 ‘자동 분석’으로 표시합니다.</li>
+<li><b>CLI 수준·최적화 대상</b> — 레포 안의 매니페스트, 스킬이 놓인 폴더, README 설치 안내, 특정 CLI 전용 기능(frontmatter 확장 키·치환 변수·도구 이름) 사용을 근거로 한 추정입니다. 각 CLI 에서 실행해 검증한 값이 아니며, ‘다른 CLI 에서는 안 된다’는 판단은 그 CLI 공식 문서에 해당 기능이 없다는 데서 온 추론입니다. <span class="tag t-auto">일반</span> 표시는 <code>npx skills add</code> 기준의 일반 절차로 레포별 검증은 하지 않았습니다.</li>
+</ul>
+<h2>CLI 별 스킬 위치 — 공식 문서 기준 ({escape(guide_mod.FACTS_VERIFIED)} 확인)</h2>
+<table class="facts"><thead><tr><th>CLI</th><th>스킬을 읽는 위치</th><th>묶음(패키징)</th></tr></thead><tbody>{rows}</tbody></table>
+<ul class="note" style="margin-top:6pt"><li>여섯 CLI 모두 표준 SKILL.md(name·description frontmatter)를 그대로 읽습니다. 차이는 읽는 폴더와 플러그인 형식입니다.</li>"""
 
 
 def _change_html(entry: dict) -> str:
@@ -246,16 +505,12 @@ def _card(e: dict) -> str:
         for f in t["flag_summary"])
     if not findings:
         findings = '<li class="none">발견된 문제 없음</li>'
-    skills = "".join(
-        f'<li><b>{escape(clip(s["name"], 48))}</b> <span class="desc">{escape(clip(s["description"], 88))}'
-        f'</span></li>' for s in t["skills"][:4])
-    more = c["skills"] - min(len(t["skills"]), 4)
-    if more > 0:
-        skills += f'<li class="none">외 {fmt_int(more)}개</li>'
+    skills_title, skills = _skills_html(e)
+    guide_block = _guide_html(e)
     trunc = " · 상한 초과로 일부만 검사" if t.get("truncated") else ""
     delta = f" ({fmt_delta(e['stars_delta'])})" if e.get("stars_delta") is not None else ""
     return f"""
-<div class="card">
+<div class="card{' long' if guide_block else ''}">
   <h3><span class="rk">#{e['rank']}</span><span>{escape(e['full_name'])}</span>
       <span class="sc"><span class="grade g{t['grade']}">{t['grade']}</span> {t['score']}점</span></h3>
   <div class="meta">★ {fmt_int(e['stars'])}{escape(delta)} · 포크 {fmt_int(e['forks'])}
@@ -263,11 +518,12 @@ def _card(e: dict) -> str:
     · 최근 푸시 {escape((e.get('pushed_at') or '')[:10])} · 검사 커밋 <code>{escape((t.get('commit') or '')[:7])}</code>
     · 스킬 {fmt_int(c['skills'])}개{trunc}</div>
   <p class="cdesc">{escape(clip(e['description'], 260)) or '<span class="none">(설명 없음)</span>'}</p>
-  <div class="checks">{''.join(f'<div class="check"><b>{escape(v)}</b><span>{escape(k)}</span></div>' for k, v in checks)}</div>
+  {guide_block}
+  <div class="blk"><div class="checks">{''.join(f'<div class="check"><b>{escape(v)}</b><span>{escape(k)}</span></div>' for k, v in checks)}</div>
   <div class="cols">
     <div><h4>주요 발견</h4><ul>{findings}</ul></div>
-    <div><h4>수록 스킬 예시</h4><ul>{skills}</ul></div>
-  </div>
+    <div><h4>{skills_title}</h4><ul>{skills}</ul></div>
+  </div></div>
 </div>"""
 
 
@@ -323,8 +579,9 @@ def build_html(snapshot: dict) -> str:
 <table><thead><tr><th class="num">#</th><th class="ctr">변동</th><th>레포</th><th class="num">★ 스타</th>
 <th class="num">전일 대비</th><th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>
 <tbody>{rows}</tbody></table>
+{_matrix_html(snapshot)}
 {rising}
-<h2>레포별 테스트 결과</h2>
+<h2>{'레포별 활용 가이드와 테스트 결과' if has_guides(snapshot) else '레포별 테스트 결과'}</h2>
 {''.join(_card(e) for e in snapshot['top'])}
 {excluded}
 <h2>방법과 한계</h2>
@@ -334,6 +591,7 @@ def build_html(snapshot: dict) -> str:
 <li><b>테스트</b> — Agent Skills 공개 규격 기준 frontmatter(name·description) 검사, 상대 링크 무결성, 번들 스크립트 문법 검사(Python·셸·JS), 위험 패턴 스캔. 모두 정적 검사이며 내려받은 코드는 실행하지 않습니다.</li>
 <li><b>점수</b> — 규격 55 + 품질 권고 15 + 링크 15 + 스크립트 15 = 100점. A 90↑ · B 75↑ · C 60↑ · D 60 미만. 규격 준수와 무결성을 잰 값이며 스킬의 실제 효용을 보증하지 않습니다.</li>
 <li><b>안전 신호</b> — 사람이 직접 확인할 위치를 알려주는 표시이며 악성 판정이 아닙니다. 보안 주제 스킬이 나쁜 예시로 해당 문구를 싣는 등 오탐이 섞이므로 점수에는 반영하지 않습니다.</li>
+{_methods_html() if has_guides(snapshot) else ''}
 </ul>
 </body></html>"""
 

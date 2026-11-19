@@ -8,6 +8,10 @@ services:
     environment:
       RUN_AT: "${RUN_AT:-08:23}" # 매일 실행 시각 (config.json 의 timezone 기준, 기본 Asia/Seoul)
       GITHUB_TOKEN: "${GITHUB_TOKEN:-}" # 선택. 없어도 동작한다 (검색 조회에만 사용)
+      # 선택. 키가 있으면 사람이 쓴 요약이 없는 레포의 한글 요약을 LLM 으로 만든다 (OpenAI 호환 API).
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-https://integrate.api.nvidia.com/v1}"
+      LLM_MODEL: "${LLM_MODEL:-z-ai/glm-5.3-flash}"
     volumes:
       - ./data:/app/data
       - ./reports:/app/reports

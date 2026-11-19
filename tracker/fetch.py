@@ -57,10 +57,19 @@ def skill_dirs_from_tree(paths: list[str]) -> list[str]:
     return sorted(dirs)
 
 
-def fetch_repo(full_name: str, dest: str, limits: dict) -> dict:
-    """트리 목록을 받고 스킬 디렉터리만 체크아웃한다.
+def root_readme(tree: dict[str, str]) -> str | None:
+    """루트의 README (정규 파일만 — 심볼릭 링크는 제외). 없으면 None."""
+    found = [p for p, mode in tree.items()
+             if "/" not in p and mode in ("100644", "100755")
+             and p.lower() in ("readme.md", "readme.markdown", "readme", "readme.txt", "readme.rst")]
+    return min(found, key=lambda p: (p.lower() != "readme.md", p)) if found else None
 
-    반환: {"tree": {path: mode}, "skill_dirs": [...], "truncated": bool, "checked_out": bool}
+
+def fetch_repo(full_name: str, dest: str, limits: dict) -> dict:
+    """트리 목록을 받고 스킬 디렉터리(와 루트 README)만 체크아웃한다.
+
+    반환: {"tree": {path: mode}, "skill_dirs": [...], "truncated": bool, "checked_out": bool,
+           "readme": 루트 README 경로 | None}
     """
     url = f"https://github.com/{full_name}.git"
     parent = os.path.dirname(dest)
@@ -79,7 +88,7 @@ def fetch_repo(full_name: str, dest: str, limits: dict) -> dict:
     truncated = len(skill_dirs) > limits["max_skills_per_repo"]
     skill_dirs = skill_dirs[: limits["max_skills_per_repo"]]
     result = {"tree": tree, "skill_dirs": skill_dirs, "truncated": truncated,
-              "checked_out": False}
+              "checked_out": False, "readme": root_readme(tree)}
     if not skill_dirs:
         return result
 
@@ -91,6 +100,9 @@ def fetch_repo(full_name: str, dest: str, limits: dict) -> dict:
             patterns += [f"/{sub}/" for sub in ROOT_SKILL_SUBDIRS]
         else:
             patterns.append("/" + _escape_pattern(d) + "/")
+    if result["readme"]:
+        # 활용 가이드(설치 방법·지원 CLI)용. 읽기만 한다.
+        patterns.append("/" + _escape_pattern(result["readme"]))
     _git(["sparse-checkout", "init", "--no-cone"], cwd=dest, timeout=60)
     with open(os.path.join(dest, ".git", "info", "sparse-checkout"), "w",
               encoding="utf-8") as fh:

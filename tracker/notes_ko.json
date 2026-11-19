@@ -1,0 +1,186 @@
+{
+  "_comment": "사람이 README·SKILL.md 를 읽고 정리한 한글 요약. 키는 레포 full_name. 여기 없는 레포는 자동 분석만 표시된다.",
+  "updated": "2026-11-19",
+  "repos": {
+    "morluto/rea": {
+      "summary": "소스 없는 앱·바이너리(네이티브, Electron/JavaScript, 펌웨어, 브라우저 대상 등)를 분석하는 리버스 엔지니어링 도구 REA 와 그 MCP 서버. 스킬은 에이전트가 이 도구를 쓰도록 안내하는 `reverse-engineer-anything` 이 핵심이고, 나머지 `rea-*` 는 REA 자체를 개발할 때 쓰는 내부용이다.",
+      "use_when": [
+        "소스 없이 앱·바이너리의 동작이나 구조를 파악해야 할 때",
+        "에이전트에게 분석 도구를 MCP 로 붙여 리버스 엔지니어링을 맡기고 싶을 때"
+      ],
+      "caution": [
+        "스킬만 복사해서는 쓸모가 적다 — README 의 `npx rea-agents setup` 으로 REA 도구(MCP)를 함께 설치해야 한다",
+        "분석 권한이 있는 대상에만 쓸 것"
+      ],
+      "highlights": [
+        {"skill": "reverse-engineer-anything", "note": "분석 대상 종류별로 REA 도구를 어떤 순서로 쓸지 안내하는 본체 스킬"}
+      ],
+      "cli": "README 는 Claude Code·Codex·Cursor·Gemini CLI·Grok Build 지원을 밝힌다. 스킬이 `.agents/skills/` 에 있어 Codex·opencode·Kimi·Gemini·Cursor 는 레포를 연 상태에서 그대로 읽는다."
+    },
+    "mattpocock/skills": {
+      "summary": "Matt Pocock 이 공개한 엔지니어링 워크플로 스킬 모음. 계획을 캐묻는 인터뷰(grill) → 스펙·티켓 작성 → TDD 구현 → 리뷰로 이어지는 흐름이 중심이고, 글쓰기·인계(handoff) 같은 생산성 스킬도 있다.",
+      "use_when": [
+        "구현 전에 계획·설계의 빈틈을 질문 공세로 찾고 싶을 때 (`grill-me`, `grilling`)",
+        "대화 내용을 스펙·티켓으로 만들어 이슈 트래커에 올리고 그대로 구현시키고 싶을 때 (`to-spec` → `to-tickets` → `implement`)",
+        "TDD·버그 진단·코드 리뷰를 정해진 절차로 돌리고 싶을 때 (`tdd`, `diagnosing-bugs`, `code-review`)"
+      ],
+      "caution": [
+        "엔지니어링 스킬은 먼저 `/setup-matt-pocock-skills` 로 이슈 트래커·라벨을 설정하라고 README 가 안내한다",
+        "39개 중 23개가 `disable-model-invocation` — 자동 발동이 아니라 직접 불러 쓰는 스킬이다",
+        "`skills/in-progress/` 는 작업 중인 스킬"
+      ],
+      "highlights": [
+        {"skill": "grill-me", "note": "계획·설계를 집요하게 인터뷰해 빈틈을 드러낸다"},
+        {"skill": "to-spec", "note": "지금까지의 대화를 스펙으로 정리해 이슈 트래커에 올린다"},
+        {"skill": "to-tickets", "note": "스펙·계획을 선후 관계가 적힌 작은 티켓들로 쪼갠다"},
+        {"skill": "tdd", "note": "테스트 먼저 쓰는 방식으로 기능 구현·버그 수정"},
+        {"skill": "diagnosing-bugs", "note": "어려운 버그·성능 저하를 진단 루프로 추적"},
+        {"skill": "handoff", "note": "현재 대화를 다른 에이전트가 이어받을 인계 문서로 압축"}
+      ],
+      "cli": "README 에 Claude Code 플러그인, Codex 플러그인, Gemini CLI(`gemini skills install`) 설치법이 있고, 그 밖의 에이전트는 `npx skills add mattpocock/skills -a <agent>` 로 안내한다."
+    },
+    "obra/superpowers": {
+      "summary": "브레인스토밍 → 계획 작성 → TDD 구현 → 코드 리뷰 → 브랜치 마무리까지, 에이전트가 따라야 할 개발 방법론 전체를 스킬로 묶은 프레임워크. 상황에 맞는 스킬을 에이전트가 스스로 꺼내 쓰도록 설계돼 있다.",
+      "use_when": [
+        "에이전트가 곧장 코드부터 짜는 것을 막고 설계·계획부터 하게 만들고 싶을 때",
+        "TDD, 원인부터 찾는 디버깅, 완료 선언 전 검증을 습관으로 강제하고 싶을 때",
+        "큰 작업을 서브에이전트에 나눠 맡기고 리뷰까지 돌리고 싶을 때"
+      ],
+      "caution": [
+        "절차가 엄격해 한두 줄짜리 수정에는 과할 수 있다",
+        "서브에이전트를 띄우는 스킬(`subagent-driven-development`, `dispatching-parallel-agents`)은 CLI 가 서브에이전트를 지원해야 한다"
+      ],
+      "highlights": [
+        {"skill": "brainstorming", "note": "기능을 만들기 전에 의도·요구사항을 질문으로 정리 (창작성 작업 전 필수로 지정)"},
+        {"skill": "writing-plans", "note": "스펙을 코드베이스를 모르는 사람도 따라 할 수 있는 단계별 구현 계획으로 작성"},
+        {"skill": "test-driven-development", "note": "실패하는 테스트 → 최소 구현 순서를 강제"},
+        {"skill": "systematic-debugging", "note": "증상 수정 금지, 근본 원인부터 찾는 디버깅 절차"},
+        {"skill": "verification-before-completion", "note": "‘끝났다’고 말하기 전에 실행 결과로 증명하게 한다"},
+        {"skill": "subagent-driven-development", "note": "작업마다 새 서브에이전트에게 구현을 맡기고 리뷰를 거친다"}
+      ],
+      "cli": "README 에 Claude Code·Codex·Cursor·Gemini CLI·Kimi Code·OpenCode 설치 절이 각각 있고, 레포에 CLI 별 매니페스트가 모두 들어 있다. 스킬 본문은 표준 필드만 쓴다."
+    },
+    "affaan-m/ECC": {
+      "summary": "스킬 330여 개(번역본·CLI 별 복사본까지 1,087개 파일)에 규칙(rules) 등을 함께 묶은 초대형 에이전트 설정 모음. 언어·프레임워크별 패턴, 테스트, 리뷰, 보안, 에이전트 운영까지 거의 모든 분야를 다룬다.",
+      "use_when": [
+        "검증된 스킬·규칙 세트를 프로젝트에 한 번에 깔고 싶을 때",
+        "쓰는 언어·프레임워크에 맞는 스킬만 골라 설치하고 싶을 때 (`--profile`, `--with capability:…`)"
+      ],
+      "caution": [
+        "전부 설치하면 컨텍스트 부담이 크다 — README 도 `rules/common` 과 실제로 쓰는 언어 팩 하나로 시작하라고 권한다",
+        "일부 스킬은 `~/.claude` 경로나 `${CLAUDE_PLUGIN_ROOT}` 를 직접 쓴다 (Claude Code 기준으로 쓰였다)",
+        "같은 스킬이 번역본·어댑터 폴더에 여러 벌 들어 있어 파일 수에 비해 고유 스킬은 훨씬 적다"
+      ],
+      "highlights": [],
+      "cli": "README: “works best with Claude Code today”, Codex·Qoder 는 네이티브 플러그인, Cursor·OpenCode·Gemini 등은 기능이 제한된 어댑터. 자체 설치 도구(`npx ecc-universal … install --target <cli>`)로 대상 CLI 를 지정한다."
+    },
+    "multica-ai/andrej-karpathy-skills": {
+      "summary": "Andrej Karpathy 가 지적한 LLM 코딩 실수(과한 설계, 요청 밖 수정, 가정 숨기기)를 줄이기 위한 행동 지침 한 장. 스킬 1개(`karpathy-guidelines`)와 같은 내용의 `CLAUDE.md`·Cursor 규칙으로 구성된다.",
+      "use_when": [
+        "에이전트가 요청하지 않은 코드까지 고치거나 과하게 설계할 때",
+        "항상 켜 두는 기본 코딩 원칙이 필요할 때"
+      ],
+      "caution": [
+        "새 기능을 주는 스킬이 아니라 행동 지침이다 — 효과는 모델이 얼마나 따르느냐에 달렸다",
+        "README 의 설치 명령은 원본 레포 `forrestchang/andrej-karpathy-skills` 를 가리킨다"
+      ],
+      "highlights": [
+        {"skill": "karpathy-guidelines", "note": "과한 설계 금지, 필요한 곳만 고치기, 가정 드러내기, 검증 가능한 성공 기준 세우기"}
+      ],
+      "cli": "README 제목부터 Claude Code 용이고 Cursor 는 `.cursor/rules/` 규칙이 들어 있다. 내용이 순수 지침이라 다른 CLI 에는 스킬 폴더를 복사해 쓰면 된다."
+    },
+    "anthropics/skills": {
+      "summary": "Anthropic 공식 스킬 예제 저장소. Claude 의 문서 생성 기능에 쓰이는 `docx`·`pdf`·`pptx`·`xlsx` 와 `skill-creator`·`mcp-builder`·`frontend-design` 같은 참고용 스킬이 들어 있다.",
+      "use_when": [
+        "Word·Excel·PowerPoint·PDF 파일을 만들거나 고치게 할 때",
+        "스킬을 직접 만들 때 구조·작성법의 기준 예시가 필요할 때 (`skill-creator`, `template`)",
+        "MCP 서버 제작, Playwright 로 웹앱 테스트, 프런트엔드 디자인 지침이 필요할 때"
+      ],
+      "caution": [
+        "README 는 데모·교육 목적이라고 밝힌다 — 중요한 작업에 쓰기 전에 직접 시험해 볼 것",
+        "문서 스킬은 스크립트 실행 환경(Python 등)이 필요하다",
+        "`claude-api`, `web-artifacts-builder` 등은 Claude 제품 전용 내용이다"
+      ],
+      "highlights": [
+        {"skill": "docx", "note": "Word 문서 생성·읽기·수정 (pdf·pptx·xlsx 도 같은 방식)"},
+        {"skill": "skill-creator", "note": "스킬을 새로 만들고 고치고 성능을 측정"},
+        {"skill": "mcp-builder", "note": "외부 API 를 붙이는 MCP 서버 제작 가이드"},
+        {"skill": "frontend-design", "note": "흔한 AI 풍을 피한 의도 있는 UI 디자인 지침"},
+        {"skill": "webapp-testing", "note": "Playwright 로 로컬 웹앱을 조작·검증"}
+      ],
+      "cli": "레포에는 Claude Code 마켓플레이스(`.claude-plugin/marketplace.json`)만 들어 있다. 스킬은 표준 SKILL.md 라 다른 CLI 에도 복사해 쓸 수 있다."
+    },
+    "DietrichGebert/ponytail": {
+      "summary": "‘게으른 시니어 개발자’ 모드. 과제를 완전히 해결하는 가장 작은 변경만 하도록(YAGNI, 표준 라이브러리 우선, 요청 없는 추상화 금지) 에이전트를 묶어 둔다.",
+      "use_when": [
+        "에이전트가 코드를 너무 많이 쓰거나 과하게 설계할 때",
+        "변경분이나 레포 전체를 품질·군살 관점에서 리뷰·감사하고 싶을 때 (`ponytail-review`, `ponytail-audit`)",
+        "미뤄 둔 지름길(`shortcut:` 주석)을 한 번에 모아 보고 싶을 때 (`ponytail-debt`)"
+      ],
+      "caution": [
+        "README: ‘band’ UI 는 Claude Code 전용",
+        "README 는 그 밖의 에이전트에 `AGENTS.md` 를 복사하거나 `skills/ponytail/SKILL.md` 를 설치하라고 안내한다"
+      ],
+      "highlights": [
+        {"skill": "ponytail", "note": "본체 — 모든 코딩 작업에 최소 변경 원칙을 적용"},
+        {"skill": "ponytail-review", "note": "변경분 리뷰: 로직·안전성·실부하에서 버티는지"},
+        {"skill": "ponytail-audit", "note": "레포 전체 감사: 버그·보안 구멍·지워도 되는 코드"}
+      ],
+      "cli": "Claude Code·Codex 플러그인 설치 명령이 README 에 있고, opencode·Kimi·Gemini·Cursor 용 구성 파일도 레포에 들어 있다."
+    },
+    "nextlevelbuilder/ui-ux-pro-max-skill": {
+      "summary": "UI/UX 디자인 지식 베이스 스킬. 스타일·색 팔레트·폰트 조합·UX 지침을 CSV 데이터로 담고, Python 검색 스크립트(`search.py`)로 프로젝트 성격에 맞는 디자인 시스템을 뽑아 준다.",
+      "use_when": [
+        "랜딩 페이지·대시보드·앱 화면을 만들 때 업종에 맞는 색·폰트·스타일 추천이 필요할 때",
+        "이미 만든 화면의 디자인을 점검·개선하고 싶을 때",
+        "브랜드 가이드·배너·슬라이드 같은 디자인 산출물을 만들 때 (`brand`, `banner-design`, `slides`)"
+      ],
+      "caution": [
+        "검색 스크립트에 Python 3 이 필요하다 (README: 표준 라이브러리만 쓰고 네트워크 호출 없음)",
+        "스킬 원본은 `.claude/skills/` 에 있고 `$ARGUMENTS`·`AskUserQuestion` 같은 Claude Code 기능을 쓴다 — 다른 CLI 는 `uipro init --ai <cli>` 로 그 CLI 용을 설치"
+      ],
+      "highlights": [
+        {"skill": "ui-ux-pro-max", "note": "본체 — 화면 설계·구현·리뷰 때 디자인 데이터를 검색해 적용"},
+        {"skill": "design-system", "note": "디자인 토큰·컴포넌트 명세"},
+        {"skill": "ui-styling", "note": "shadcn/ui 기반 UI 구현 지침"}
+      ],
+      "cli": "Claude Code 플러그인이 기본이고, 자체 설치 도구 `uipro init --ai claude|cursor|codex|gemini|opencode|kimi …` 로 CLI 별 설치를 지원한다."
+    },
+    "Shubhamsaboo/awesome-llm-apps": {
+      "summary": "RAG·AI 에이전트 등 LLM 앱 예제 100여 개를 모은 튜토리얼 저장소. 스킬은 그 일부(`agent_skills/` 7개와 폐기 표시된 3개)다.",
+      "use_when": [
+        "LLM 앱 예제 코드를 찾을 때 (레포의 본래 용도)",
+        "`project-graveyard`(방치된 사이드 프로젝트 부검), `commit-archaeologist`(코드가 왜 생겼는지 git 이력 추적), `dependency-doctor`(의존성 매니페스트 점검) 같은 개별 스킬이 필요할 때"
+      ],
+      "caution": [
+        "별이 많은 이유는 스킬이 아니라 앱 예제 모음이기 때문 — 스킬 인기 지표로 보기 어렵다",
+        "3개 스킬은 DEPRECATED 표시"
+      ],
+      "highlights": [
+        {"skill": "commit-archaeologist", "note": "로컬 git 이력으로 ‘이 코드가 왜 있는지’ 복원"},
+        {"skill": "project-graveyard", "note": "PC 의 죽은 사이드 프로젝트를 찾아 이력으로 부검"},
+        {"skill": "advisor-orchestrator-worker", "note": "큰 작업을 3단계 모델 팀(조언·조율·실행)으로 나눠 처리"}
+      ],
+      "cli": "특정 CLI 용 패키징은 없다. README 는 `npx skills add …` 로 스킬을 하나씩 설치하는 방법을 안내하며 Claude Code·Codex·Cursor 등에서 동작한다고 적는다."
+    },
+    "JuliusBrussee/caveman": {
+      "summary": "답변을 ‘원시인 말투’로 줄여 출력 토큰을 아끼는 스킬. 군더더기는 빼고 기술 정보는 남긴다. 커밋 메시지·코드 리뷰·메모리 파일 압축용 파생 스킬과 Caveman Cloud(LLM 비용 측정) 연동 스킬도 있다.",
+      "use_when": [
+        "긴 설명 없이 결론만 받고 싶거나 토큰 비용을 줄이고 싶을 때 (`/caveman`, 더 강하게 `/ultracave`)",
+        "`CLAUDE.md` 같은 메모리 파일을 압축해 입력 토큰을 줄이고 싶을 때 (`caveman-compress`)",
+        "짧은 커밋 메시지나 한 줄짜리 리뷰가 필요할 때 (`caveman-commit`, `caveman-review`)"
+      ],
+      "caution": [
+        "`caveman-setup` 등 Cloud 계열 스킬은 LLM 요청이 Caveman Cloud 게이트웨이를 거치도록 레포를 바꾼다 — 필요할 때만 쓸 것",
+        "자세한 설명이 필요한 학습·문서 작업에는 맞지 않는다"
+      ],
+      "highlights": [
+        {"skill": "caveman", "note": "본체 — 결론 먼저, 군말 제거, 기술 정보 유지"},
+        {"skill": "caveman-compress", "note": "메모리 파일을 압축해 입력 토큰 절감"},
+        {"skill": "caveman-commit", "note": "의도만 남긴 Conventional Commits 메시지"},
+        {"skill": "caveman-review", "note": "발견 사항당 한 줄(위치·문제·수정)짜리 코드 리뷰"}
+      ],
+      "cli": "README 에 자체 설치 도구(`npx @caveman-ai/cli@latest`), `npx skills add`, Claude Code 플러그인, Gemini 확장 명령이 있다. Codex 에서는 `$caveman` 으로 부른다."
+    }
+  }
+}
