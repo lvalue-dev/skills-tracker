@@ -12,9 +12,11 @@ services:
       LLM_API_KEY: "${LLM_API_KEY:-}"
       LLM_BASE_URL: "${LLM_BASE_URL:-https://integrate.api.nvidia.com/v1}"
       LLM_MODEL: "${LLM_MODEL:-z-ai/glm-5.3-flash}"
+    # 홈서버 결과물은 git 이 관리하지 않는 폴더(기본 ./output)에 쌓는다.
+    # 레포의 data/·reports/ 에 쓰면 GitHub 쪽 리포트 커밋과 겹쳐 `git pull` 이 실패한다.
     volumes:
-      - ./data:/app/data
-      - ./reports:/app/reports
+      - ${OUTPUT_DIR:-./output}/data:/app/data
+      - ${OUTPUT_DIR:-./output}/reports:/app/reports
     cap_drop:
       - ALL
     security_opt:

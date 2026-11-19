@@ -47,22 +47,36 @@ Docker 와 Docker Compose 만 있으면 됩니다. 컨테이너가 상주하며 
 ```bash
 git clone https://github.com/lvalue-dev/skills-tracker.git && cd skills-tracker
 cp .env.example .env            # PUID/PGID(`id -u`, `id -g`), 실행 시각, (선택) 토큰
-mkdir -p data reports
+mkdir -p output && cp -r data reports output/   # 지난 데이터로 시작해야 첫날부터 전일 대비가 나온다
 docker compose up -d --build    # 이후 매일 RUN_AT(기본 08:23 KST)에 자동 실행
 docker compose logs -f tracker  # 진행 상황 확인
 ```
 
-- 리포트는 홈서버의 `reports/YYYY-MM-DD.pdf`, 원본 데이터는 `data/` 에 쌓입니다 (호스트 폴더 마운트).
+- 리포트는 홈서버의 `output/reports/YYYY-MM-DD.pdf`, 원본 데이터는 `output/data/` 에 쌓입니다.
+  git 이 관리하지 않는 폴더라서 `git pull` 과 부딪히지 않습니다 (`.env` 의 `OUTPUT_DIR` 로 위치 변경).
 - 서버가 꺼져 있다가 실행 시각을 지나 켜지면 오늘자 리포트가 없을 때 바로 한 번 실행합니다.
 - 실패하면 30분 간격으로 하루 최대 3번까지만 다시 시도합니다.
 - 지금 바로 한 번 실행: `docker compose run --rm tracker scripts/run_daily.sh`
-- 코드 갱신: `git pull && docker compose up -d --build`
+- 코드 갱신: `git pull && docker compose up -d --build` — 컨테이너는 빌드 시점의 코드로 돌기 때문에
+  `git pull` 만 해서는 반영되지 않고 반드시 다시 빌드해야 합니다.
+- 이미 만든 날짜의 리포트를 새 코드 형식으로 다시 만들기 (네트워크 접근 없음):
+  `docker compose run --rm tracker python -m tracker --render-only --date YYYY-MM-DD`
+
+**이전 구성(레포의 `data/`·`reports/` 에 직접 쓰던 방식)에서 옮기기** — `git pull` 이 충돌로 실패한다면:
+
+```bash
+docker compose down
+mkdir -p output && mv data reports output/   # 홈서버가 만든 결과물을 통째로 옮긴다 (삭제 없음)
+git checkout -- data reports                 # git 이 관리하는 원래 파일을 되살린다
+git pull
+docker compose up -d --build
+```
 - GitHub 토큰은 없어도 됩니다. 넣는다면 권한을 하나도 주지 않은 토큰이면 충분하고, 검색 조회에만 쓰입니다.
 - (선택) `.env` 에 `LLM_API_KEY` 를 넣으면 `tracker/notes_ko.json` 에 한글 요약이 없는 레포를 LLM 이 요약해
   ‘AI 요약’ 으로 표시합니다 (OpenAI 호환 API, 기본 NVIDIA NIM). 공개 레포의 README 앞부분과 스킬 이름·설명만
   보내고, 결과는 `data/.cache/notes_auto.json` 에 보관해 스킬 구성이 바뀌거나 30일이 지나야 다시 부릅니다.
 - 컨테이너는 비루트 사용자로, 모든 권한(capability)을 제거한 채 실행됩니다. 이미지 크기는 약 1.6GB 입니다.
-- 홈서버는 리포트를 로컬에만 저장하고 GitHub 로 푸시하지 않습니다.
+- 홈서버는 리포트를 로컬(`output/`)에만 저장하고 GitHub 로 푸시하지 않습니다.
 
 홈서버로 옮긴 뒤에는 중복 수집을 피하도록 GitHub Actions 의 **Daily skills report** 워크플로를
 비활성화하세요 (Actions 탭 → 워크플로 선택 → Disable workflow).
