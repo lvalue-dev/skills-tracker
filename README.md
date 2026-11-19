@@ -16,7 +16,13 @@ AI 에이전트용 스킬(Agent Skills, `SKILL.md`) 레포를 GitHub 스타 순�
    - `SKILL.md` 안 상대 링크가 실제 파일을 가리키는지
    - 번들 스크립트 문법(Python `ast`, `bash -n`, `node --check`)
    - 위험 패턴 스캔(원격 스크립트 셸 실행, 전체 삭제, 난독화 실행, 숨김 유니코드 등)
-4. **리포트** — 순위·전일 대비 스타 증감·급상승 레포·레포별 테스트 결과를 PDF 로 만든다.
+4. **활용 가이드** — 레포마다 어떤 스킬인지, 언제 쓰는지, CLI 별 적용 방법을 정리한다 (`tracker/guide.py`).
+   - 한글 요약은 `tracker/notes_ko.json` 에 사람이 쓴 것을 우선 쓰고, 없으면 (선택) LLM 의 ‘AI 요약’,
+     그것도 없으면 `SKILL.md` description 과 키워드 분류로 만든 자동 분석을 보여 준다.
+   - Claude Code · Codex · opencode · Kimi · Gemini CLI · Cursor 에 대해 전용 지원(●) / 적용 가능(○) /
+     일부 제한(△) 과 ‘최적화 대상’을 표시한다. 레포 안의 매니페스트, 스킬 폴더 위치, README 설치 안내,
+     특정 CLI 전용 기능 사용을 근거로 한 **추정**이며 각 CLI 에서 실행해 검증한 값이 아니다.
+5. **리포트** — 순위·전일 대비 스타 증감·급상승 레포·CLI 호환성 표·레포별 가이드와 테스트 결과를 PDF 로 만든다.
 
 점수는 규격 55 + 품질 권고 15 + 링크 15 + 스크립트 15 (A 90↑ · B 75↑ · C 60↑ · D).
 규격 준수와 무결성을 잰 값이며 스킬의 실제 효용을 보증하지는 않습니다.
@@ -28,6 +34,8 @@ AI 에이전트용 스킬(Agent Skills, `SKILL.md`) 레포를 GitHub 스타 순�
   star·fork·issue·PR·댓글 같은 쓰기 호출은 코드에 존재하지 않는다.
 - 레포당 depth 1 · blob 없는 스파스 클론 1회로 스킬 폴더만 받고, 요청 사이에 간격을 둔다.
 - 내려받은 코드는 **실행하지 않는다**. 문법 검사는 파싱만 한다(단위 테스트로 보장).
+- `LLM_API_KEY` 를 설정한 경우에만 요약할 레포의 README 앞부분과 스킬 이름·설명(모두 공개 내용)을
+  LLM API 로 보낸다. 받은 글은 형식·길이·스킬 이름을 검사하고 ‘AI 요약’ 으로 구분해 표시한다.
 - 서브모듈·LFS·심볼릭 링크는 받지 않고, 토큰은 git·검사 프로세스에 전달하지 않는다.
 - 클론은 검사 직후 삭제하고, 리포트에는 메타데이터와 검사 결과만 싣는다.
 - 워크플로 권한은 이 레포에 대한 `contents: write` 하나뿐이다.
@@ -50,6 +58,9 @@ docker compose logs -f tracker  # 진행 상황 확인
 - 지금 바로 한 번 실행: `docker compose run --rm tracker scripts/run_daily.sh`
 - 코드 갱신: `git pull && docker compose up -d --build`
 - GitHub 토큰은 없어도 됩니다. 넣는다면 권한을 하나도 주지 않은 토큰이면 충분하고, 검색 조회에만 쓰입니다.
+- (선택) `.env` 에 `LLM_API_KEY` 를 넣으면 `tracker/notes_ko.json` 에 한글 요약이 없는 레포를 LLM 이 요약해
+  ‘AI 요약’ 으로 표시합니다 (OpenAI 호환 API, 기본 NVIDIA NIM). 공개 레포의 README 앞부분과 스킬 이름·설명만
+  보내고, 결과는 `data/.cache/notes_auto.json` 에 보관해 스킬 구성이 바뀌거나 30일이 지나야 다시 부릅니다.
 - 컨테이너는 비루트 사용자로, 모든 권한(capability)을 제거한 채 실행됩니다. 이미지 크기는 약 1.6GB 입니다.
 - 홈서버는 리포트를 로컬에만 저장하고 GitHub 로 푸시하지 않습니다.
 

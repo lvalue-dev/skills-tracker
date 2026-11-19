@@ -16,7 +16,7 @@ import tempfile
 import time
 from zoneinfo import ZoneInfo
 
-from . import checks, collect, fetch, report
+from . import checks, collect, fetch, guide, report, summarize
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -55,6 +55,9 @@ def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]
     """스타 순으로 내려가며 SKILL.md 를 가진 레포 top_n 개를 테스트한다."""
     top, excluded = [], []
     limits = cfg["limits"]
+    summarizer = None
+    if summarize.enabled():  # 선택: 사람이 쓴 요약이 없는 레포의 한글 요약 (LLM_API_KEY 가 있을 때만)
+        summarizer = summarize.Summarizer(os.path.join(ROOT, "data", ".cache", "notes_auto.json"))
     workdir = tempfile.mkdtemp(prefix="skills-tracker-")
     try:
         for checked, repo in enumerate(pool[: cfg["max_candidates_checked"]]):
@@ -72,6 +75,11 @@ def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]
                                      "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"})
                     continue
                 result = checks.analyze_repo(dest, fetched, limits)
+                try:
+                    result["guide"] = guide.build_guide(dest, fetched, repo, limits, summarizer)
+                except Exception as exc:  # 활용 가이드는 부가 정보 — 실패해도 리포트는 만든다
+                    print(f"[guide] {name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+                    result["guide"] = None
                 result["commit"] = subprocess.run(
                     ["git", "rev-parse", "HEAD"], cwd=dest, capture_output=True, text=True,
                     env=fetch.safe_env()).stdout.strip()
@@ -143,7 +151,7 @@ def main() -> int:
     snapshot = {
         "date": date, "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": cfg["timezone"],
         "previous_date": previous["date"] if previous else None,
-        "pool_size": len(pool), "search_failures": failures,
+        "pool_size": len(pool), "search_failures": failures, "guide_meta": {**guide.meta(), "llm_model": summarize.model_name()},
         "top": top, "rising": rising, "excluded": excluded,
         "pool": [{"full_name": r["full_name"], "stars": r["stars"]} for r in pool],
     }
