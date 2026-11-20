@@ -6839,5 +6839,125 @@
    "full_name": "magnus919/agent-skills",
    "stars": 182
   }
- ]
+ ],
+ "highlights": {
+  "previous_date": "2026-11-19",
+  "top": {
+   "moved": [],
+   "entered": [],
+   "left": []
+  },
+  "star_leader": {
+   "full_name": "morluto/rea",
+   "delta": 1717
+  },
+  "outside_leader": {
+   "full_name": "elementalsouls/Claude-BugHunter",
+   "delta": 1143,
+   "stars": 12494,
+   "blurb": "A Claude Code skill bundle for bug hunting and external red-team work - 82 skills, 15 slash commands, 681 disclosed-report patterns curated across 24 core vulnerability classes, plus enterprise identity + infrastructure attack matrices."
+  },
+  "climbers": [
+   {
+    "full_name": "Nutlope/hallmark",
+    "stars": 58051,
+    "delta": 519,
+    "rank": 33,
+    "prev_rank": 35,
+    "blurb": "Anti-AI-slop design skill for Claude Code, Cursor, and Codex."
+   },
+   {
+    "full_name": "blader/humanizer",
+    "stars": 71259,
+    "delta": 433,
+    "rank": 24,
+    "prev_rank": 25,
+    "blurb": ""
+   },
+   {
+    "full_name": "elementalsouls/Claude-BugHunter",
+    "stars": 12494,
+    "delta": 1143,
+    "rank": 89,
+    "prev_rank": 90,
+    "blurb": "A Claude Code skill bundle for bug hunting and external red-team work - 82 skills, 15 slash commands, 681 disclosed-report patterns curated across 24 core vulnerability classes, plus enterprise identity + infrastructure attack matrices."
+   },
+   {
+    "full_name": "kaomei/stickman-video-director",
+    "stars": 7059,
+    "delta": 115,
+    "rank": 96,
+    "prev_rank": 97,
+    "blurb": ""
+   },
+   {
+    "full_name": "borghei/Claude-Skills",
+    "stars": 1167,
+    "delta": 4,
+    "rank": 136,
+    "prev_rank": 137,
+    "blurb": ""
+   }
+  ],
+  "climbers_total": 7,
+  "pool_size": 180,
+  "tests": {
+   "avg": 98.8,
+   "avg_prev": 98.6,
+   "grades": {
+    "A": 10
+   },
+   "repos": 10,
+   "improved": [
+    {
+     "full_name": "mattpocock/skills",
+     "prev": 97.8,
+     "now": 99.6,
+     "fixed": [
+      "frontmatter YAML 파싱 실패"
+     ],
+     "added": []
+    }
+   ],
+   "worsened": [],
+   "resolved": [
+    {
+     "full_name": "mattpocock/skills",
+     "kind": "frontmatter YAML 파싱 실패"
+    }
+   ],
+   "skill_changes": [
+    {
+     "full_name": "affaan-m/ECC",
+     "prev": 1087,
+     "now": 1089
+    }
+   ],
+   "errors": [
+    {
+     "full_name": "anthropics/skills",
+     "kind": "description 1024자 초과",
+     "count": 1,
+     "example": "skills/claude-api/SKILL.md",
+     "level": "error"
+    }
+   ],
+   "high_flags": [
+    {
+     "full_name": "affaan-m/ECC",
+     "label": "루트/홈 전체 삭제 명령",
+     "count": 4,
+     "path": "docs/ja-JP/skills/perl-security/SKILL.md",
+     "line": 239,
+     "status": "same"
+    }
+   ]
+  },
+  "excluded": [
+   {
+    "full_name": "Graphify-Labs/graphify",
+    "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"
+   }
+  ]
+ }
 }

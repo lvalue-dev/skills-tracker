@@ -2,6 +2,7 @@
 services:
   tracker:
     build: .
+    image: skills-tracker:local
     restart: unless-stopped
     # 리포트 파일이 호스트 사용자 소유로 남도록 호스트의 UID:GID 로 실행한다 (.env 에서 변경).
     user: "${PUID:-1000}:${PGID:-1000}"
@@ -17,6 +18,23 @@ services:
     volumes:
       - ${OUTPUT_DIR:-./output}/data:/app/data
       - ${OUTPUT_DIR:-./output}/reports:/app/reports
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # 리포트 웹 보기: http://<홈서버 주소>:8080 (날짜별 목록 → 웹 리포트 · PDF)
+  # 인증이 없으니 공유기 포트포워딩으로 외부에 열지 말고 집 안 네트워크에서만 쓴다.
+  web:
+    build: .
+    image: skills-tracker:local
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    command: ["python", "-m", "http.server", "8080", "--directory", "/app/reports"]
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ${OUTPUT_DIR:-./output}/reports:/app/reports:ro
     cap_drop:
       - ALL
     security_opt:

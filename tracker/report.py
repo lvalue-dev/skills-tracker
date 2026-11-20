@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 from collections import Counter
 from html import escape
+from urllib.parse import quote
 
 from . import guide as guide_mod
 
@@ -235,6 +236,152 @@ def _md_methods() -> list[str]:
     return out + [""]
 
 
+# ---------------------------------------------------------- 오늘의 요약 --
+# 문장은 (스타일, 글자) 조각 목록으로 만든다. Markdown·HTML 이 같은 문장을 각자 형식으로 그린다.
+# 스타일: t 보통 · b 굵게(레포 이름) · up 상승 · down 하락 · new 신규 · code 경로 · muted 보조 설명
+
+def _repo(name: str) -> tuple[str, str]:
+    return ("b", name)
+
+
+def highlight_sections(h: dict) -> list[tuple[str, list[list[tuple[str, str]]]]]:
+    prev = h.get("previous_date")
+    sections = []
+
+    # Top 10
+    top = h["top"]
+    items = []
+    if not prev:
+        items.append([("muted", "첫 수집일이라 비교 대상이 없습니다. 다음 리포트부터 전일 대비 변화가 나옵니다.")])
+    elif not top["moved"] and not top["entered"]:
+        items.append([("t", "순위 변동 없음")])
+    else:
+        for m in top["moved"]:
+            diff = m["prev_rank"] - m["rank"]
+            items.append([_repo(m["full_name"]), ("t", " "),
+                          ("up" if diff > 0 else "down", f"{'▲' if diff > 0 else '▼'}{abs(diff)}"),
+                          ("t", f" ({m['prev_rank']}위→{m['rank']}위)")])
+    for n in top["entered"]:
+        items.append([("new", "신규 진입"), ("t", " "), _repo(n["full_name"]), ("t", f" ({n['rank']}위)")])
+    for x in top["left"]:
+        items.append([("down", "밖으로"), ("t", " "), _repo(x["full_name"]), ("t", f" (전일 {x['prev_rank']}위)")])
+    if prev and not top["entered"]:
+        items.append([("t", "신규 진입 없음")])
+    if h.get("star_leader"):
+        sl = h["star_leader"]
+        items.append([("t", "스타 증가 1위: "), _repo(sl["full_name"]), ("t", " "), ("up", fmt_delta(sl["delta"]))])
+    sections.append((f"Top {h['tests']['repos']}", items))
+
+    # 순위 상승
+    if prev:
+        items = []
+        for c in h["climbers"]:
+            diff = c["prev_rank"] - c["rank"]
+            line = [_repo(c["full_name"]), ("t", ": "), ("up", f"▲{diff}"),
+                    ("t", f" ({c['prev_rank']}위→{c['rank']}위), ★ "), ("up", fmt_delta(c["delta"]))]
+            if c.get("blurb"):
+                line.append(("muted", " — " + clip(c["blurb"], 90)))
+            items.append(line)
+        if h["climbers_total"] > len(h["climbers"]):
+            items.append([("muted", f"그 밖에 {h['climbers_total'] - len(h['climbers'])}개 레포가 순위가 올랐습니다.")])
+        if not items:
+            items.append([("t", "순위가 오른 레포 없음")])
+        ol = h.get("outside_leader")
+        if ol and ol["full_name"] not in {c["full_name"] for c in h["climbers"]}:
+            line = [("t", "Top 10 밖 스타 증가 1위: "), _repo(ol["full_name"]), ("t", " "), ("up", fmt_delta(ol["delta"])),
+                    ("t", f" (★{fmt_int(ol['stars'])})")]
+            if ol.get("blurb"):
+                line.append(("muted", " — " + clip(ol["blurb"], 90)))
+            items.append(line)
+        sections.append((f"순위 상승 (전체 후보 {fmt_int(h.get('pool_size') or 0)}개 기준)", items))
+
+    # 테스트 결과
+    t = h["tests"]
+    items = []
+    grades = ", ".join(f"{g} {t['grades'][g]}개" for g in "ABCD" if t["grades"].get(g))
+    all_one = len(t["grades"]) == 1
+    grade_text = f"{t['repos']}개 모두 {next(iter(t['grades']))}등급" if all_one else f"등급 {grades}"
+    if t.get("avg_prev") is not None and t["avg_prev"] != t["avg"]:
+        items.append([("t", f"평균 점수 {t['avg_prev']} → "), ("up" if t["avg"] > t["avg_prev"] else "down", str(t["avg"])),
+                      ("t", f", {grade_text}")])
+    else:
+        items.append([("t", f"평균 점수 {t['avg']}{' (전일과 같음)' if t.get('avg_prev') is not None else ''}, {grade_text}")])
+    for c in t["improved"]:
+        why = f" — {', '.join(c['fixed'])} 해결" if c["fixed"] else ""
+        items.append([_repo(c["full_name"]), ("t", f" {c['prev']} → "), ("up", str(c["now"])), ("t", why)])
+    for c in t["worsened"]:
+        why = f" — {', '.join(c['added'])} 새로 발생" if c["added"] else ""
+        items.append([_repo(c["full_name"]), ("t", f" {c['prev']} → "), ("down", str(c["now"])), ("t", why)])
+    if t["errors"]:
+        for err in t["errors"]:
+            label = ("남은 규격 오류: " if prev else "규격 오류: ") if err["level"] == "error" else "스크립트 오류: "
+            items.append([("t", label), _repo(err["full_name"]),
+                          ("t", f" — {err['kind']} {err['count']}건 "), ("code", err["example"])])
+    else:
+        items.append([("t", "규격 오류 없음")])
+    for c in t["skill_changes"]:
+        items.append([("t", "스킬 수 변화: "), _repo(c["full_name"]), ("t", f" {fmt_int(c['prev'])} → {fmt_int(c['now'])}")])
+    for f in t["high_flags"]:
+        status = {"same": " — 전일과 같은 위치", "new": " — 새로 생김, 확인 필요", "unknown": ""}[f["status"]]
+        items.append([("t", "안전 신호(높음): "), _repo(f["full_name"]), ("t", f" {f['label']} {f['count']}건"),
+                      ("down" if f["status"] == "new" else "muted", status)])
+    for x in h.get("excluded", []):
+        items.append([("t", "제외: "), _repo(x["full_name"]), ("muted", f" — {x['reason']}")])
+    sections.append(("테스트 결과", items))
+    return sections
+
+
+def _md_segments(line: list[tuple[str, str]]) -> str:
+    out = []
+    for style, text in line:
+        text = _md(text)
+        out.append(f"**{text}**" if style == "b" else f"`{text}`" if style == "code" else text)
+    return "".join(out)
+
+
+def _html_segments(line: list[tuple[str, str]]) -> str:
+    out = []
+    for style, text in line:
+        if not text:
+            continue
+        if style == "b":
+            out.append(repo_link(text))
+        elif style == "code":
+            out.append(f"<code>{escape(text)}</code>")
+        elif style in ("up", "down", "new", "muted"):
+            out.append(f'<span class="{ "none" if style == "muted" else style }">{escape(text)}</span>')
+        else:
+            out.append(escape(text))
+    return "".join(out)
+
+
+def _md_highlights(snapshot: dict) -> list[str]:
+    h = snapshot.get("highlights")
+    if not h:
+        return []
+    title = f"## 오늘의 요약 — {h['previous_date']} 대비" if h.get("previous_date") else "## 오늘의 요약"
+    out = [title, ""]
+    for heading, items in highlight_sections(h):
+        out += [f"**{heading}**", ""] + [f"- {_md_segments(line)}" for line in items] + [""]
+    return out
+
+
+def _html_highlights(snapshot: dict) -> str:
+    h = snapshot.get("highlights")
+    if not h:
+        return ""
+    title = f"오늘의 요약 — {escape(h['previous_date'])} 대비" if h.get("previous_date") else "오늘의 요약"
+    blocks = "".join(f'<div class="hl"><h3>{escape(heading)}</h3><ul>'
+                     + "".join(f"<li>{_html_segments(line)}</li>" for line in items) + "</ul></div>"
+                     for heading, items in highlight_sections(h))
+    return f'<h2>{title}</h2><div class="hls">{blocks}</div>'
+
+
+def repo_link(full_name: str) -> str:
+    url = "https://github.com/" + "/".join(quote(part, safe="-_.") for part in full_name.split("/", 1))
+    return f'<a class="rl" href="{escape(url, quote=True)}">{escape(full_name)}</a>'
+
+
 RANK_NOTE = ("순위는 그날 검색된 후보 풀 전체를 스타 순으로 줄 세운 값입니다. Top 표의 순위는 그중 "
              "SKILL.md 를 가진 레포만 센 것이라 서로 다를 수 있습니다.")
 
@@ -251,8 +398,9 @@ def build_markdown(snapshot: dict) -> str:
            f"- 생성: {snapshot['generated_at']} ({snapshot['timezone']})",
            f"- 후보 풀 {fmt_int(snapshot['pool_size'])}개 레포 중 SKILL.md 를 실제로 가진 "
            f"스타 상위 {ov['repos']}개를 테스트 (스킬 {fmt_int(ov['skills'])}개, 평균 {ov['avg']}점)",
-           f"- PDF: [{snapshot['date']}.pdf]({snapshot['date']}.pdf)", "",
-           "## 스타 상위 Top " + str(ov["repos"]), "",
+           f"- PDF: [{snapshot['date']}.pdf]({snapshot['date']}.pdf) · 웹: [{snapshot['date']}.html]({snapshot['date']}.html)", ""]
+    out += _md_highlights(snapshot)
+    out += ["## 스타 상위 Top " + str(ov["repos"]), "",
            "| # | 순위 변동 | 레포 | ★ 스타 | 전일 대비 | 스킬 수 | 점수 | 등급 |",
            "|--:|:--:|---|--:|--:|--:|--:|:--:|"]
     for e in snapshot["top"]:
@@ -386,6 +534,28 @@ code { font-family: "DejaVu Sans Mono", "Noto Sans Mono CJK KR", monospace; font
 .legend { color: #5a6873; font-size: 7.8pt; margin: 5pt 0 0; } .legend .lv { margin: 0 3pt 0 8pt; }
 .legend .lv:first-child { margin-left: 0; }
 .facts { font-size: 7.8pt; margin-top: 6pt; } .facts td:first-child { white-space: nowrap; font-weight: 700; }
+a.rl { color: inherit; text-decoration: none; }
+.hls { display: grid; grid-template-columns: 1fr 1fr; gap: 6pt 14pt; }
+.hl { break-inside: avoid; } .hl:last-child { grid-column: 1 / -1; }
+.hl h3 { font-size: 9.6pt; margin: 2pt 0 3pt; color: #0b6e69; }
+.hl ul { padding-left: 12pt; } .hl li { margin-bottom: 2.5pt; }
+@media screen {
+  html { background: #eef1f3; font-size: 10.5pt; }
+  body { max-width: 980px; margin: 0 auto; padding: 28px 32px 56px; background: #ffffff; }
+  a { color: #0b6e69; }
+  a.rl { color: inherit; }
+  a.rl:hover { text-decoration: underline; color: #0b6e69; }
+  .navbar { font-size: 9pt; margin-bottom: 10pt; } .navbar a { color: #0b6e69; }
+}
+@media screen and (max-width: 680px) {
+  body { padding: 16px 16px 40px; }
+  .tiles, .checks { grid-template-columns: repeat(2, 1fr); }
+  .cols, .hls { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; }
+  .repo { min-width: 170px; }
+  .hl .repo, .card .repo { min-width: 0; }
+}
+@media print { .navbar { display: none; } }
 """
 
 
@@ -564,14 +734,14 @@ def build_html(snapshot: dict) -> str:
     grades = " · ".join(f"{g} {ov['grades'][g]}" for g in "ABCD" if ov["grades"].get(g))
     rows = "".join(f"""
 <tr><td class="num">{e['rank']}</td><td class="ctr">{_change_html(e)}</td>
-<td><div class="repo">{escape(e['full_name'])}</div><div class="desc">{escape(clip(e['description'], 120))}</div></td>
+<td><div class="repo">{repo_link(e['full_name'])}</div><div class="desc">{escape(clip(e['description'], 120))}</div></td>
 <td class="num">{fmt_int(e['stars'])}</td><td class="num">{_delta_html(e.get('stars_delta'))}</td>
 <td class="num">{fmt_int(e['test']['counts']['skills'])}</td><td class="num">{e['test']['score']}</td>
 <td class="ctr"><span class="grade g{e['test']['grade']}">{e['test']['grade']}</span></td></tr>"""
                    for e in snapshot["top"])
     if snapshot.get("rising"):
         rising_rows = "".join(
-            f'<tr><td><div class="repo">{escape(r["full_name"])}</div>'
+            f'<tr><td><div class="repo">{repo_link(r["full_name"])}</div>'
             f'<div class="desc">{escape(clip(r["description"], 120))}</div></td>'
             f'<td class="num">{r.get("rank") or "–"}</td><td class="ctr">{_change_html(r)}</td>'
             f'<td class="num">{fmt_int(r["stars"])}</td><td class="num">{_delta_html(r["delta"])}</td></tr>'
@@ -587,7 +757,7 @@ def build_html(snapshot: dict) -> str:
     if snapshot.get("previous_date"):
         if snapshot.get("climbers"):
             climb_rows = "".join(
-                f'<tr><td class="repo">{escape(c["full_name"])}</td>'
+                f'<tr><td class="repo">{repo_link(c["full_name"])}</td>'
                 f'<td class="ctr"><span class="up">{escape(rank_change(c))}</span></td>'
                 f'<td class="ctr">{escape(rank_path(c))}</td>'
                 f'<td class="num">{fmt_int(c["stars"])}</td><td class="num">{_delta_html(c["delta"])}</td></tr>'
@@ -611,8 +781,10 @@ def build_html(snapshot: dict) -> str:
                 + escape("; ".join(snapshot["search_failures"])[:300]) + "</p>")
     return f"""<!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <title>AI Skills 일일 리포트 {escape(snapshot['date'])}</title><style>{CSS}</style></head><body>
+<div class="navbar"><a href="index.html">← 날짜별 리포트</a> · <a href="{escape(snapshot['date'])}.pdf">PDF 받기</a></div>
 <div class="kicker">SKILLS TRACKER · DAILY</div>
 <h1>AI Skills 일일 리포트 — {escape(snapshot['date'])}</h1>
 <div class="sub">GitHub 스타 상위 에이전트 스킬 레포 수집 및 자체 정적 테스트 결과 · 생성 {escape(snapshot['generated_at'])} ({escape(snapshot['timezone'])})</div>
@@ -623,6 +795,7 @@ def build_html(snapshot: dict) -> str:
   <div class="tile"><b>{ov['avg']}</b><span>평균 점수 · 등급 {escape(grades)}</span></div>
 </div>
 {warn}
+{_html_highlights(snapshot)}
 <h2>스타 상위 Top {ov['repos']}</h2>
 <table><thead><tr><th class="num">#</th><th class="ctr">순위 변동</th><th>레포</th><th class="num">★ 스타</th>
 <th class="num">전일 대비</th><th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>
@@ -642,6 +815,46 @@ def build_html(snapshot: dict) -> str:
 {_methods_html() if has_guides(snapshot) else ''}
 </ul>
 </body></html>"""
+
+
+# ------------------------------------------------------------------ 웹 목록 --
+
+def build_index(entries: list[dict]) -> str:
+    """날짜별 리포트 목록 페이지. entries: [{date, top1, avg, climbers, moved}] (최신순)."""
+    rows = "".join(
+        f'<tr><td class="repo"><a class="rl" href="{escape(e["date"])}.html">{escape(e["date"])}</a></td>'
+        f'<td>{repo_link(e["top1"]) if e.get("top1") else "–"}</td>'
+        f'<td class="num">{e.get("avg") if e.get("avg") is not None else "–"}</td>'
+        f'<td>{escape(e.get("headline") or "–")}</td>'
+        f'<td class="ctr"><a href="{escape(e["date"])}.html">웹</a> · <a href="{escape(e["date"])}.pdf">PDF</a></td></tr>'
+        for e in entries)
+    return f"""<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>AI Skills 리포트</title><style>{CSS}</style></head><body>
+<div class="kicker">SKILLS TRACKER · DAILY</div>
+<h1>AI Skills 일일 리포트</h1>
+<div class="sub">GitHub 스타 상위 에이전트 스킬 레포를 매일 수집·정적 테스트한 결과입니다. 날짜를 누르면 리포트가 열립니다.</div>
+<table><thead><tr><th>날짜</th><th>1위</th><th class="num">평균 점수</th><th>오늘의 한 줄</th><th class="ctr">보기</th></tr></thead>
+<tbody>{rows}</tbody></table>
+</body></html>"""
+
+
+def headline(snapshot: dict) -> str:
+    """목록 페이지에 쓸 한 줄 요약."""
+    h = snapshot.get("highlights")
+    if not h or not h.get("previous_date"):
+        return "첫 수집"
+    parts = []
+    moved = h["top"]["moved"]
+    parts.append(f"Top 순위 변동 {len(moved)}건" if moved else "Top 순위 변동 없음")
+    if h["top"]["entered"]:
+        parts.append("신규 진입 " + ", ".join(n["full_name"] for n in h["top"]["entered"]))
+    if h["climbers"]:
+        c = h["climbers"][0]
+        parts.append(f"상승 1위 {c['full_name']} ▲{c['prev_rank'] - c['rank']}")
+    return " · ".join(parts)
 
 
 # --------------------------------------------------------------------- PDF --

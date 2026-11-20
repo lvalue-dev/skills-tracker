@@ -3045,5 +3045,63 @@
    "full_name": "blackwell-systems/agent-lsp",
    "stars": 181
   }
- ]
+ ],
+ "climbers": [],
+ "highlights": {
+  "previous_date": null,
+  "top": {
+   "moved": [],
+   "entered": [],
+   "left": []
+  },
+  "star_leader": null,
+  "outside_leader": null,
+  "climbers": [],
+  "climbers_total": 0,
+  "pool_size": 179,
+  "tests": {
+   "avg": 98.6,
+   "avg_prev": null,
+   "grades": {
+    "A": 10
+   },
+   "repos": 10,
+   "improved": [],
+   "worsened": [],
+   "resolved": [],
+   "skill_changes": [],
+   "errors": [
+    {
+     "full_name": "mattpocock/skills",
+     "kind": "frontmatter YAML 파싱 실패",
+     "count": 1,
+     "example": "skills/in-progress/software-factory/SKILL.md",
+     "level": "error"
+    },
+    {
+     "full_name": "anthropics/skills",
+     "kind": "description 1024자 초과",
+     "count": 1,
+     "example": "skills/claude-api/SKILL.md",
+     "level": "error"
+    }
+   ],
+   "high_flags": [
+    {
+     "full_name": "affaan-m/ECC",
+     "label": "루트/홈 전체 삭제 명령",
+     "count": 4,
+     "path": "docs/ja-JP/skills/perl-security/SKILL.md",
+     "line": 239,
+     "status": "unknown"
+    }
+   ]
+  },
+  "excluded": [
+   {
+    "full_name": "Graphify-Labs/graphify",
+    "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"
+   }
+  ]
+ }
 }

@@ -3,7 +3,9 @@
 AI 에이전트용 스킬(Agent Skills, `SKILL.md`) 레포를 GitHub 스타 순으로 매일 10개 수집하고,
 자체 정적 테스트를 거쳐 일자별 PDF 리포트로 남깁니다.
 
-- 리포트: [`reports/`](reports/README.md) — `YYYY-MM-DD.pdf` (같은 내용의 `.md` 포함)
+- 리포트: [`reports/`](reports/README.md) — `YYYY-MM-DD.pdf`, 같은 내용의 웹 페이지 `.html` 과 `.md`
+- 매 리포트 맨 앞의 **오늘의 요약** 에 전일 대비 순위 변동(▲2, 35위→33위)·스타 증가·순위 상승 레포·
+  점수 변화·해결되거나 새로 생긴 오류가 문장으로 정리됩니다 (PDF·웹·Markdown 동일).
 - 원본 데이터: `data/YYYY-MM-DD.json` — 다음 날 스타 증감·순위 변동 계산에 사용
 
 ## 매일 하는 일
@@ -52,7 +54,9 @@ docker compose up -d --build    # 이후 매일 RUN_AT(기본 08:23 KST)에 자�
 docker compose logs -f tracker  # 진행 상황 확인
 ```
 
-- 리포트는 홈서버의 `output/reports/YYYY-MM-DD.pdf`, 원본 데이터는 `output/data/` 에 쌓입니다.
+- **웹에서 보기**: `http://<홈서버 주소>:8080` — 날짜별 목록에서 웹 리포트나 PDF 를 엽니다 (휴대폰 화면 대응).
+  포트는 `.env` 의 `WEB_PORT`. 인증이 없으니 집 안 네트워크에서만 쓰고 공유기 포트포워딩으로 열지 마세요.
+- 리포트는 홈서버의 `output/reports/YYYY-MM-DD.pdf`(웹은 `.html`), 원본 데이터는 `output/data/` 에 쌓입니다.
   git 이 관리하지 않는 폴더라서 `git pull` 과 부딪히지 않습니다 (`.env` 의 `OUTPUT_DIR` 로 위치 변경).
 - 서버가 꺼져 있다가 실행 시각을 지나 켜지면 오늘자 리포트가 없을 때 바로 한 번 실행합니다.
 - 실패하면 30분 간격으로 하루 최대 3번까지만 다시 시도합니다.

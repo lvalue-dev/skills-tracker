@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>AI Skills 일일 리포트 2026-11-18</title><style>
+@page { size: A4; margin: 15mm 14mm 16mm; @bottom-center { content: counter(page) " / " counter(pages);
+  font-size: 8pt; color: #7a8791; font-family: "Noto Sans CJK KR", "Noto Sans KR", sans-serif; } }
+* { box-sizing: border-box; }
+html { font-family: "Noto Sans CJK KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-size: 9.2pt; line-height: 1.5; color: #1b2733; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; }
+h1 { font-size: 21pt; line-height: 1.2; margin: 0 0 2pt; letter-spacing: -0.02em; }
+h2 { font-size: 12.5pt; margin: 20pt 0 7pt; padding-bottom: 4pt; border-bottom: 1.5pt solid #1b2733;
+  break-after: avoid; }
+.kicker { font-size: 8pt; letter-spacing: 0.14em; color: #0b6e69; font-weight: 700; }
+.sub { color: #5a6873; font-size: 8.6pt; margin-bottom: 12pt; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7pt; margin: 10pt 0 4pt; }
+.tile { border: 0.75pt solid #d5dce1; border-radius: 5pt; padding: 8pt 10pt; }
+.tile b { display: block; font-size: 16pt; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.tile span { color: #5a6873; font-size: 7.8pt; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 7.6pt; color: #5a6873; font-weight: 700; padding: 4pt 5pt;
+  border-bottom: 0.75pt solid #9aa6af; white-space: nowrap; }
+td { padding: 5pt 5pt; border-bottom: 0.5pt solid #e1e6ea; vertical-align: top; }
+tr { break-inside: avoid; }
+.num { text-align: right; white-space: nowrap; }
+.ctr { text-align: center; white-space: nowrap; }
+.repo { font-weight: 700; overflow-wrap: anywhere; }
+.desc { color: #5a6873; font-size: 7.8pt; overflow-wrap: anywhere; }
+.up { color: #0b6e69; font-weight: 700; } .down { color: #b3402a; font-weight: 700; }
+.new { color: #8a5a00; font-weight: 700; font-size: 7.4pt; }
+.path { color: #5a6873; font-size: 7pt; line-height: 1.3; }
+.grade { display: inline-block; min-width: 15pt; text-align: center; border-radius: 3pt; padding: 0 4pt;
+  font-weight: 700; color: #fff; }
+.gA { background: #0b6e69; } .gB { background: #3a6ea5; } .gC { background: #a8730a; } .gD { background: #b3402a; }
+.card { border: 0.75pt solid #d5dce1; border-radius: 6pt; padding: 9pt 12pt; margin: 0 0 8pt; break-inside: avoid; }
+.card h3 { margin: 0; font-size: 11pt; display: flex; gap: 7pt; align-items: baseline; }
+.card h3 .rk { color: #7a8791; font-weight: 400; }
+.card h3 .sc { margin-left: auto; font-size: 9pt; font-weight: 400; color: #5a6873; white-space: nowrap; }
+.meta { color: #5a6873; font-size: 7.8pt; margin: 2pt 0 5pt; }
+.cdesc { margin: 0 0 7pt; overflow-wrap: anywhere; }
+.checks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5pt; margin-bottom: 7pt; }
+.check { background: #f3f6f8; border-radius: 4pt; padding: 5pt 7pt; }
+.check b { display: block; font-size: 9.4pt; font-variant-numeric: tabular-nums; }
+.check span { font-size: 7.2pt; color: #5a6873; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; }
+.cols h4 { margin: 0 0 3pt; font-size: 7.8pt; color: #5a6873; letter-spacing: 0.04em; }
+ul { margin: 0; padding-left: 11pt; } li { margin-bottom: 2pt; overflow-wrap: anywhere; }
+.tag { font-size: 7pt; font-weight: 700; border-radius: 2.5pt; padding: 0.5pt 3.5pt; margin-right: 3pt; white-space: nowrap; }
+.t-error { background: #f6ddd7; color: #8f2c1a; } .t-script { background: #f4e7c8; color: #6f4a00; }
+.t-warning { background: #e4e9ed; color: #44525d; } .t-high { background: #f6ddd7; color: #8f2c1a; }
+.t-medium { background: #f4e7c8; color: #6f4a00; }
+code { font-family: "DejaVu Sans Mono", "Noto Sans Mono CJK KR", monospace; font-size: 7.4pt; color: #44525d; }
+.none { color: #7a8791; }
+.note { color: #44525d; font-size: 8.4pt; } .note li { margin-bottom: 3pt; }
+.card.long { break-inside: auto; } .card.long h3, .card h4 { break-after: avoid; }
+.blk { break-inside: avoid; } .clit tr, .matrix tr { break-inside: avoid; }
+.sect { break-inside: avoid; }
+.guide { border-top: 0.5pt solid #e1e6ea; border-bottom: 0.5pt solid #e1e6ea; padding: 7pt 0 6pt; margin: 0 0 8pt; }
+.gsum { margin: 0 0 6pt; font-size: 9.6pt; }
+.t-ko { background: #d9eeec; color: #0b5551; } .t-auto { background: #e4e9ed; color: #44525d; }
+.t-ai { background: #ece6f6; color: #4b3a7a; }
+.guide .cols { margin-bottom: 6pt; }
+.card h4 { margin: 0 0 3pt; font-size: 7.8pt; color: #5a6873; letter-spacing: 0.04em; }
+.card h4 b { color: #1b2733; font-size: 8.6pt; letter-spacing: 0; }
+.lv { display: inline-block; font-size: 7.2pt; font-weight: 700; border-radius: 2.5pt; padding: 0.5pt 4pt; white-space: nowrap; }
+.lv-native { background: #0b6e69; color: #fff; } .lv-ok { background: #e4e9ed; color: #1b2733; }
+.lv-limited { background: #f4e7c8; color: #6f4a00; }
+.clit { font-size: 7.8pt; } .clit td { padding: 2.5pt 5pt; } .clit td:first-child { white-space: nowrap; font-weight: 700; }
+.clit .ev { color: #5a6873; }
+.matrix { table-layout: fixed; } .matrix th:first-child { width: 4%; } .matrix th:nth-child(2) { width: 28%; }
+.matrix th:last-child { width: 21%; } .matrix td { padding-top: 4pt; padding-bottom: 4pt; }
+.matrix td, .matrix th { text-align: center; } .matrix td:nth-child(2), .matrix th:nth-child(2),
+.matrix td:last-child, .matrix th:last-child { text-align: left; }
+.legend { color: #5a6873; font-size: 7.8pt; margin: 5pt 0 0; } .legend .lv { margin: 0 3pt 0 8pt; }
+.legend .lv:first-child { margin-left: 0; }
+.facts { font-size: 7.8pt; margin-top: 6pt; } .facts td:first-child { white-space: nowrap; font-weight: 700; }
+a.rl { color: inherit; text-decoration: none; }
+.hls { display: grid; grid-template-columns: 1fr 1fr; gap: 6pt 14pt; }
+.hl { break-inside: avoid; } .hl:last-child { grid-column: 1 / -1; }
+.hl h3 { font-size: 9.6pt; margin: 2pt 0 3pt; color: #0b6e69; }
+.hl ul { padding-left: 12pt; } .hl li { margin-bottom: 2.5pt; }
+@media screen {
+  html { background: #eef1f3; font-size: 10.5pt; }
+  body { max-width: 980px; margin: 0 auto; padding: 28px 32px 56px; background: #ffffff; }
+  a { color: #0b6e69; }
+  a.rl { color: inherit; }
+  a.rl:hover { text-decoration: underline; color: #0b6e69; }
+  .navbar { font-size: 9pt; margin-bottom: 10pt; } .navbar a { color: #0b6e69; }
+}
+@media screen and (max-width: 680px) {
+  body { padding: 16px 16px 40px; }
+  .tiles, .checks { grid-template-columns: repeat(2, 1fr); }
+  .cols, .hls { grid-template-columns: 1fr; }
+  table { display: block; overflow-x: auto; }
+  .repo { min-width: 170px; }
+  .hl .repo, .card .repo { min-width: 0; }
+}
+@media print { .navbar { display: none; } }
+</style></head><body>
+<div class="navbar"><a href="index.html">← 날짜별 리포트</a> · <a href="2026-11-18.pdf">PDF 받기</a></div>
+<div class="kicker">SKILLS TRACKER · DAILY</div>
+<h1>AI Skills 일일 리포트 — 2026-11-18</h1>
+<div class="sub">GitHub 스타 상위 에이전트 스킬 레포 수집 및 자체 정적 테스트 결과 · 생성 2026-11-18 23:32 (Asia/Seoul)</div>
+<div class="tiles">
+  <div class="tile"><b>179</b><span>검색된 후보 레포</span></div>
+  <div class="tile"><b>10</b><span>테스트한 스타 상위 레포</span></div>
+  <div class="tile"><b>1,231</b><span>검사한 스킬(SKILL.md)</span></div>
+  <div class="tile"><b>98.6</b><span>평균 점수 · 등급 A 10</span></div>
+</div>
+
+<h2>오늘의 요약</h2><div class="hls"><div class="hl"><h3>Top 10</h3><ul><li><span class="none">첫 수집일이라 비교 대상이 없습니다. 다음 리포트부터 전일 대비 변화가 나옵니다.</span></li></ul></div><div class="hl"><h3>테스트 결과</h3><ul><li>평균 점수 98.6, 10개 모두 A등급</li><li>규격 오류: <a class="rl" href="https://github.com/mattpocock/skills">mattpocock/skills</a> — frontmatter YAML 파싱 실패 1건 <code>skills/in-progress/software-factory/SKILL.md</code></li><li>규격 오류: <a class="rl" href="https://github.com/anthropics/skills">anthropics/skills</a> — description 1024자 초과 1건 <code>skills/claude-api/SKILL.md</code></li><li>안전 신호(높음): <a class="rl" href="https://github.com/affaan-m/ECC">affaan-m/ECC</a> 루트/홈 전체 삭제 명령 4건</li><li>제외: <a class="rl" href="https://github.com/Graphify-Labs/graphify">Graphify-Labs/graphify</a><span class="none"> — SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)</span></li></ul></div></div>
+<h2>스타 상위 Top 10</h2>
+<table><thead><tr><th class="num">#</th><th class="ctr">순위 변동</th><th>레포</th><th class="num">★ 스타</th>
+<th class="num">전일 대비</th><th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/morluto/rea">morluto/rea</a></div><div class="desc">Reverse engineer anything with agents, from app behavior down to native binaries.</div></td>
+<td class="num">467,620</td><td class="num"><span class="none">–</span></td>
+<td class="num">6</td><td class="num">95.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">2</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/mattpocock/skills">mattpocock/skills</a></div><div class="desc">Skills for Real Engineers. Straight from my .agents directory.</div></td>
+<td class="num">327,227</td><td class="num"><span class="none">–</span></td>
+<td class="num">39</td><td class="num">97.8</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">3</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/obra/superpowers">obra/superpowers</a></div><div class="desc">An agentic skills framework &amp; software development methodology that works.</div></td>
+<td class="num">319,770</td><td class="num"><span class="none">–</span></td>
+<td class="num">15</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">4</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/affaan-m/ECC">affaan-m/ECC</a></div><div class="desc">The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development…</div></td>
+<td class="num">306,155</td><td class="num"><span class="none">–</span></td>
+<td class="num">1,087</td><td class="num">97.1</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">5</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/multica-ai/andrej-karpathy-skills">multica-ai/andrej-karpathy-skills</a></div><div class="desc">A single CLAUDE.md file to improve Claude Code behavior, derived from Andrej Karpathy&#x27;s observations on LLM coding pitf…</div></td>
+<td class="num">234,193</td><td class="num"><span class="none">–</span></td>
+<td class="num">1</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">6</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/anthropics/skills">anthropics/skills</a></div><div class="desc">Public repository for Agent Skills</div></td>
+<td class="num">197,041</td><td class="num"><span class="none">–</span></td>
+<td class="num">20</td><td class="num">95.8</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">7</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/DietrichGebert/ponytail">DietrichGebert/ponytail</a></div><div class="desc">Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote.</div></td>
+<td class="num">193,760</td><td class="num"><span class="none">–</span></td>
+<td class="num">12</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">8</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/nextlevelbuilder/ui-ux-pro-max-skill">nextlevelbuilder/ui-ux-pro-max-skill</a></div><div class="desc">An AI skill that provides design intelligence for building professional UI/UX across multiple platforms.</div></td>
+<td class="num">151,192</td><td class="num"><span class="none">–</span></td>
+<td class="num">13</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">9</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/Shubhamsaboo/awesome-llm-apps">Shubhamsaboo/awesome-llm-apps</a></div><div class="desc">100+ AI Agents, Agent Skills and RAG Apps - Free and Open Source.</div></td>
+<td class="num">145,006</td><td class="num"><span class="none">–</span></td>
+<td class="num">10</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr>
+<tr><td class="num">10</td><td class="ctr"><span class="none">–</span></td>
+<td><div class="repo"><a class="rl" href="https://github.com/JuliusBrussee/caveman">JuliusBrussee/caveman</a></div><div class="desc">why use many token when few token do trick. Skill + local proxy for coding agents: shorter answers, smaller tool output…</div></td>
+<td class="num">121,215</td><td class="num"><span class="none">–</span></td>
+<td class="num">28</td><td class="num">100.0</td>
+<td class="ctr"><span class="grade gA">A</span></td></tr></tbody></table>
+
+<h2>급상승</h2><p class="note">오늘이 첫 수집일이라 비교 대상이 없습니다. 다음 리포트부터 전일 대비 스타 증가 상위 레포가 표시됩니다.</p>
+<h2>레포별 테스트 결과</h2>
+
+<div class="card">
+  <h3><span class="rk">#1</span><span>morluto/rea</span>
+      <span class="sc"><span class="grade gA">A</span> 95.0점</span></h3>
+  <div class="meta">★ 467,620 · 포크 114,351
+    · 라이선스 MIT · TypeScript
+    · 최근 푸시 2026-11-18 · 검사 커밋 <code>7b02fec</code>
+    · 스킬 6개</div>
+  <p class="cdesc">Reverse engineer anything with agents, from app behavior down to native binaries.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>6 / 6 (100%)</b><span>규격 통과</span></div><div class="check"><b>4 / 6 (67%)</b><span>권고까지 무결</span></div><div class="check"><b>59 / 59 (100%)</b><span>상대 링크 정상</span></div><div class="check"><b>해당 없음</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-warning">권고</span>본문 500줄 초과 × 2<br><code>.agents/skills/reverse-engineer-anything/SKILL.md</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>rea-analysis-optimization</b> <span class="desc">Optimize REA providers and shared analysis workflows for agent context, latency, CPU, a…</span></li><li><b>rea-changelog-update</b> <span class="desc">Prepare or rewrite REA release changelogs and GitHub release notes from pinned Git hist…</span></li><li><b>rea-ci-tests-audit</b> <span class="desc">Audit REA CI and test suites for correctness, fixture drift, false passes, and measured…</span></li><li><b>rea-tool-design</b> <span class="desc">Audit, investigate, design, or change REA investigation tools, CLI/MCP contracts, provi…</span></li><li class="none">외 2개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#2</span><span>mattpocock/skills</span>
+      <span class="sc"><span class="grade gA">A</span> 97.8점</span></h3>
+  <div class="meta">★ 327,227 · 포크 27,480
+    · 라이선스 MIT · Shell
+    · 최근 푸시 2026-11-18 · 검사 커밋 <code>5863806</code>
+    · 스킬 39개</div>
+  <p class="cdesc">Skills for Real Engineers. Straight from my .agents directory.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>38 / 39 (97%)</b><span>규격 통과</span></div><div class="check"><b>37 / 39 (95%)</b><span>권고까지 무결</span></div><div class="check"><b>32 / 32 (100%)</b><span>상대 링크 정상</span></div><div class="check"><b>4 / 4 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-error">규격 오류</span>frontmatter YAML 파싱 실패 × 1<br><code>skills/in-progress/software-factory/SKILL.md</code></li><li><span class="tag t-warning">권고</span>description 이 너무 짧음 × 1<br><code>skills/engineering/pr/SKILL.md</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>ask-matt</b> <span class="desc">Ask which skill or flow fits your situation. A router over the skills in this repo.</span></li><li><b>code-review</b> <span class="desc">Review the changes since a fixed point (commit, branch, tag, or merge-base) along two a…</span></li><li><b>codebase-design</b> <span class="desc">Shared vocabulary for designing deep modules. Use when the user wants to design or impr…</span></li><li><b>diagnosing-bugs</b> <span class="desc">Diagnosis loop for hard bugs and performance regressions. Use when the user says &quot;diagn…</span></li><li class="none">외 35개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#3</span><span>obra/superpowers</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 319,770 · 포크 28,523
+    · 라이선스 MIT · Shell
+    · 최근 푸시 2026-11-03 · 검사 커밋 <code>22f0b46</code>
+    · 스킬 15개</div>
+  <p class="cdesc">An agentic skills framework &amp; software development methodology that works.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>15 / 15 (100%)</b><span>규격 통과</span></div><div class="check"><b>15 / 15 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>19 / 19 (100%)</b><span>상대 링크 정상</span></div><div class="check"><b>6 / 6 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li class="none">발견된 문제 없음</li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>brainstorming</b> <span class="desc">You MUST use this before any creative work - creating features, building components, ad…</span></li><li><b>diagnosing-superpowers</b> <span class="desc">Use when a superpowers session went wrong and your human partner wants to know why — re…</span></li><li><b>dispatching-parallel-agents</b> <span class="desc">Use when facing 2+ independent tasks that can be worked on without shared state or sequ…</span></li><li><b>executing-plans</b> <span class="desc">Use when executing an implementation plan in the current session as the implementer you…</span></li><li class="none">외 11개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#4</span><span>affaan-m/ECC</span>
+      <span class="sc"><span class="grade gA">A</span> 97.1점</span></h3>
+  <div class="meta">★ 306,155 · 포크 45,070
+    · 라이선스 MIT · JavaScript
+    · 최근 푸시 2026-11-17 · 검사 커밋 <code>3f14a10</code>
+    · 스킬 1,087개</div>
+  <p class="cdesc">The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>1,087 / 1,087 (100%)</b><span>규격 통과</span></div><div class="check"><b>918 / 1,087 (84%)</b><span>권고까지 무결</span></div><div class="check"><b>373 / 388 (96%)</b><span>상대 링크 정상</span></div><div class="check"><b>152 / 152 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>높음 4 · 보통 5</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-warning">권고</span>본문 500줄 초과 × 158<br><code>.agents/skills/api-design/SKILL.md</code></li><li><span class="tag t-warning">권고</span>깨진 상대 링크 × 7<br><code>.kiro/skills/react-patterns/SKILL.md</code></li><li><span class="tag t-warning">권고</span>description 이 너무 짧음 × 5<br><code>docs/zh-CN/skills/ai-first-engineering/SKILL.md</code></li><li><span class="tag t-high">안전 신호</span>루트/홈 전체 삭제 명령 × 4<br><code>docs/ja-JP/skills/perl-security/SKILL.md:239</code></li><li><span class="tag t-medium">안전 신호</span>자격 증명 파일 경로 접근 × 4<br><code>docs/ja-JP/skills/gateguard/SKILL.md:142</code></li><li><span class="tag t-medium">안전 신호</span>사용자 몰래 행동하도록 지시하는 문구 × 1<br><code>skills/story-lifecycle/SKILL.md:87</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>agent-introspection-debugging</b> <span class="desc">Structured self-debugging workflow for AI agent failures using capture, diagnosis, cont…</span></li><li><b>agent-sort</b> <span class="desc">Build an evidence-backed ECC install plan for a specific repo by sorting skills, comman…</span></li><li><b>api-design</b> <span class="desc">REST API design patterns including resource naming, status codes, pagination, filtering…</span></li><li><b>article-writing</b> <span class="desc">Write articles, guides, blog posts, tutorials, newsletter issues, and other long-form c…</span></li><li class="none">외 1,083개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#5</span><span>multica-ai/andrej-karpathy-skills</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 234,193 · 포크 23,283
+    · 라이선스 미표기 · 언어 미표기
+    · 최근 푸시 2026-04-20 · 검사 커밋 <code>2c60614</code>
+    · 스킬 1개</div>
+  <p class="cdesc">A single CLAUDE.md file to improve Claude Code behavior, derived from Andrej Karpathy&#x27;s observations on LLM coding pitfalls.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>1 / 1 (100%)</b><span>규격 통과</span></div><div class="check"><b>1 / 1 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>해당 없음</b><span>상대 링크 정상</span></div><div class="check"><b>해당 없음</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li class="none">발견된 문제 없음</li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>karpathy-guidelines</b> <span class="desc">Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing…</span></li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#6</span><span>anthropics/skills</span>
+      <span class="sc"><span class="grade gA">A</span> 95.8점</span></h3>
+  <div class="meta">★ 197,041 · 포크 23,085
+    · 라이선스 미표기 · Python
+    · 최근 푸시 2026-11-16 · 검사 커밋 <code>e4bb5d9</code>
+    · 스킬 20개</div>
+  <p class="cdesc">Public repository for Agent Skills</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>19 / 20 (95%)</b><span>규격 통과</span></div><div class="check"><b>18 / 20 (90%)</b><span>권고까지 무결</span></div><div class="check"><b>14 / 14 (100%)</b><span>상대 링크 정상</span></div><div class="check"><b>79 / 79 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>높음 0 · 보통 2</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-error">규격 오류</span>description 1024자 초과 × 1<br><code>skills/claude-api/SKILL.md</code></li><li><span class="tag t-warning">권고</span>본문 500줄 초과 × 1<br><code>skills/claude-api/SKILL.md</code></li><li><span class="tag t-warning">권고</span>name 과 폴더명 불일치 × 1<br><code>template/SKILL.md</code></li><li><span class="tag t-medium">안전 신호</span>자격 증명 파일 경로 접근 × 2<br><code>skills/claude-api/shared/evals/report/build-report-lite.mjs:28</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>academy-guide</b> <span class="desc">Stop and check this skill before finishing any reply to a question about how to use Cla…</span></li><li><b>algorithmic-art</b> <span class="desc">Creating algorithmic art using p5.js with seeded randomness and interactive parameter e…</span></li><li><b>brand-guidelines</b> <span class="desc">Applies Anthropic&#x27;s official brand colors and typography to any sort of artifact that m…</span></li><li><b>canvas-design</b> <span class="desc">Create beautiful visual art in .png and .pdf documents using design philosophy. You sho…</span></li><li class="none">외 16개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#7</span><span>DietrichGebert/ponytail</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 193,760 · 포크 10,897
+    · 라이선스 MIT · JavaScript
+    · 최근 푸시 2026-10-29 · 검사 커밋 <code>96608e0</code>
+    · 스킬 12개</div>
+  <p class="cdesc">Makes your AI agent think like the laziest senior dev in the room. The best code is the code you never wrote.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>12 / 12 (100%)</b><span>규격 통과</span></div><div class="check"><b>12 / 12 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>해당 없음</b><span>상대 링크 정상</span></div><div class="check"><b>해당 없음</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li class="none">발견된 문제 없음</li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>ponytail</b> <span class="desc">Lazy senior dev mode for any coding task: the smallest change that fully solves it, and…</span></li><li><b>ponytail-audit</b> <span class="desc">Quality audit of the whole repo: bugs, security, real load, missing tests, speed, and w…</span></li><li><b>ponytail-debt</b> <span class="desc">Harvest every shortcut: comment into one debt ledger, so deferrals get tracked instead…</span></li><li><b>ponytail-gain</b> <span class="desc">Show ponytail measured impact as a scoreboard: less code, less cost, more speed, from t…</span></li><li class="none">외 8개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#8</span><span>nextlevelbuilder/ui-ux-pro-max-skill</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 151,192 · 포크 15,974
+    · 라이선스 MIT · Python
+    · 최근 푸시 2026-11-18 · 검사 커밋 <code>f984fcd</code>
+    · 스킬 13개</div>
+  <p class="cdesc">An AI skill that provides design intelligence for building professional UI/UX across multiple platforms.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>13 / 13 (100%)</b><span>규격 통과</span></div><div class="check"><b>13 / 13 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>해당 없음</b><span>상대 링크 정상</span></div><div class="check"><b>88 / 88 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>없음</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li class="none">발견된 문제 없음</li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>banner-design</b> <span class="desc">Design banners for social media, ads, website heroes, creative assets, and print. Multi…</span></li><li><b>brand</b> <span class="desc">Brand voice, visual identity, messaging frameworks, asset management, brand consistency…</span></li><li><b>design</b> <span class="desc">Comprehensive design skill: brand identity, design tokens, UI styling, logo generation…</span></li><li><b>design-system</b> <span class="desc">Token architecture, component specifications, and slide generation. Three-layer tokens…</span></li><li class="none">외 9개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#9</span><span>Shubhamsaboo/awesome-llm-apps</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 145,006 · 포크 21,356
+    · 라이선스 Apache-2.0 · Python
+    · 최근 푸시 2026-11-18 · 검사 커밋 <code>14c5f8f</code>
+    · 스킬 10개</div>
+  <p class="cdesc">100+ AI Agents, Agent Skills and RAG Apps - Free and Open Source.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>10 / 10 (100%)</b><span>규격 통과</span></div><div class="check"><b>10 / 10 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>35 / 35 (100%)</b><span>상대 링크 정상</span></div><div class="check"><b>10 / 10 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>높음 0 · 보통 1</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-medium">안전 신호</span>권한 확인/검증 우회 옵션 × 1<br><code>agent_skills/advisor-orchestrator-worker/SKILL.md:48</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>advisor-orchestrator-worker</b> <span class="desc">Use when a task is too large for one model pass, needs parallel research or generation…</span></li><li><b>commit-archaeologist</b> <span class="desc">Reconstructs why code exists from local git history, including the introducing commit,…</span></li><li><b>dependency-doctor</b> <span class="desc">Checks requirements.txt, pyproject.toml, and package.json dependency manifests for surf…</span></li><li><b>first-reader</b> <span class="desc">Beta readers for any draft, run by simulating how a real reader experiences it, moment…</span></li><li class="none">외 6개</li></ul></div>
+  </div></div>
+</div>
+<div class="card">
+  <h3><span class="rk">#10</span><span>JuliusBrussee/caveman</span>
+      <span class="sc"><span class="grade gA">A</span> 100.0점</span></h3>
+  <div class="meta">★ 121,215 · 포크 7,085
+    · 라이선스 Apache-2.0 · Go
+    · 최근 푸시 2026-11-18 · 검사 커밋 <code>a192894</code>
+    · 스킬 28개</div>
+  <p class="cdesc">why use many token when few token do trick. Skill + local proxy for coding agents: shorter answers, smaller tool output, every original recoverable.</p>
+  
+  <div class="blk"><div class="checks"><div class="check"><b>28 / 28 (100%)</b><span>규격 통과</span></div><div class="check"><b>28 / 28 (100%)</b><span>권고까지 무결</span></div><div class="check"><b>해당 없음</b><span>상대 링크 정상</span></div><div class="check"><b>17 / 17 (100%)</b><span>스크립트 문법 정상</span></div><div class="check"><b>높음 0 · 보통 2</b><span>안전 신호</span></div></div>
+  <div class="cols">
+    <div><h4>주요 발견</h4><ul><li><span class="tag t-medium">안전 신호</span>자격 증명 파일 경로 접근 × 2<br><code>plugins/caveman/skills/caveman-compress/scripts/compress.py:70</code></li></ul></div>
+    <div><h4>수록 스킬 예시</h4><ul><li><b>cavecrew</b> <span class="desc">When to delegate to `cavecrew-investigator` (locate code), `cavecrew-builder` (1-2 file…</span></li><li><b>caveman</b> <span class="desc">Terse caveman voice: answer first, fluff gone, every technical fact kept. Use for /cave…</span></li><li><b>caveman-compress</b> <span class="desc">Compress a memory file such as CLAUDE.md or a todo list into caveman format to save inp…</span></li><li><b>caveman-stats</b> <span class="desc">Show recorded output and cache-read token usage and mode attribution for the current Cl…</span></li><li class="none">외 24개</li></ul></div>
+  </div></div>
+</div>
+<h2>제외된 후보</h2><p class="note">스타 순위는 높지만 아래 사유로 Top 목록에서 빠졌습니다.</p><table><thead><tr><th>레포</th><th class="num">★ 스타</th><th>사유</th></tr></thead><tbody><tr><td class="repo">Graphify-Labs/graphify</td><td class="num">149,972</td><td>SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)</td></tr></tbody></table>
+<h2>방법과 한계</h2>
+<ul class="note">
+<li><b>수집</b> — GitHub 검색 API의 읽기(GET) 요청만 사용해 스킬 관련 토픽·이름으로 후보를 모으고 스타 내림차순으로 정렬합니다. 실제로 SKILL.md 를 가진 레포만 순위에 넣습니다.</li>
+<li><b>타 레포 비간섭</b> — star·fork·issue·PR·댓글 등 쓰기 동작이 전혀 없고, 레포당 얕은(depth 1) 스파스 클론 1회만 수행하며 요청 사이에 간격을 둡니다.</li>
+<li><b>테스트</b> — Agent Skills 공개 규격 기준 frontmatter(name·description) 검사, 상대 링크 무결성, 번들 스크립트 문법 검사(Python·셸·JS), 위험 패턴 스캔. 모두 정적 검사이며 내려받은 코드는 실행하지 않습니다.</li>
+<li><b>점수</b> — 규격 55 + 품질 권고 15 + 링크 15 + 스크립트 15 = 100점. A 90↑ · B 75↑ · C 60↑ · D 60 미만. 규격 준수와 무결성을 잰 값이며 스킬의 실제 효용을 보증하지 않습니다.</li>
+<li><b>안전 신호</b> — 사람이 직접 확인할 위치를 알려주는 표시이며 악성 판정이 아닙니다. 보안 주제 스킬이 나쁜 예시로 해당 문구를 싣는 등 오탐이 섞이므로 점수에는 반영하지 않습니다.</li>
+
+</ul>
+</body></html>

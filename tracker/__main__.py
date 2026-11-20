@@ -16,7 +16,7 @@ import tempfile
 import time
 from zoneinfo import ZoneInfo
 
-from . import checks, collect, fetch, guide, report, summarize
+from . import checks, collect, fetch, guide, highlights, report, summarize
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -67,7 +67,7 @@ def apply_pool_ranks(rising: list[dict], pool: list[dict], previous: dict | None
     for entry in rising:
         entry["rank"] = rank.get(entry["full_name"])
         entry["prev_rank"] = prev_rank.get(entry["full_name"])
-    climbers = [{"full_name": r["full_name"], "stars": r["stars"],
+    climbers = [{"full_name": r["full_name"], "stars": r["stars"], "description": r.get("description", ""),
                  "delta": r["stars"] - prev_stars[r["full_name"]],
                  "rank": rank[r["full_name"]], "prev_rank": prev_rank[r["full_name"]]}
                 for r in pool if prev_rank.get(r["full_name"], 0) > rank[r["full_name"]]]
@@ -125,22 +125,40 @@ def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]
     return top, excluded
 
 
-def write_index(reports_dir: str) -> None:
+def write_index(reports_dir: str, data_dir: str | None = None) -> None:
+    """날짜별 목록: GitHub 에서 보는 README.md 와 웹으로 보는 index.html."""
     dates = sorted((os.path.basename(p)[:-4] for p in glob.glob(os.path.join(reports_dir, "*.pdf"))),
                    reverse=True)
-    lines = ["# 일자별 리포트", "", "| 날짜 | PDF | Markdown |", "|---|---|---|"]
-    lines += [f"| {d} | [{d}.pdf]({d}.pdf) | [{d}.md]({d}.md) |" for d in dates]
+    lines = ["# 일자별 리포트", "", "| 날짜 | PDF | Markdown | 웹 |", "|---|---|---|---|"]
+    lines += [f"| {d} | [{d}.pdf]({d}.pdf) | [{d}.md]({d}.md) | [{d}.html]({d}.html) |" for d in dates]
     with open(os.path.join(reports_dir, "README.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
+    entries = []
+    for d in dates:
+        entry = {"date": d}
+        try:
+            with open(os.path.join(data_dir or "", f"{d}.json"), encoding="utf-8") as fh:
+                snap = json.load(fh)
+            entry.update(top1=snap["top"][0]["full_name"] if snap.get("top") else None,
+                         avg=report.overview(snap)["avg"] if snap.get("top") else None,
+                         headline=report.headline(snap))
+        except (OSError, ValueError, KeyError):
+            pass
+        entries.append(entry)
+    with open(os.path.join(reports_dir, "index.html"), "w", encoding="utf-8") as fh:
+        fh.write(report.build_index(entries))
 
 
-def write_reports(snapshot: dict, reports_dir: str, skip_pdf: bool) -> None:
+def write_reports(snapshot: dict, reports_dir: str, skip_pdf: bool, data_dir: str | None = None) -> None:
     date = snapshot["date"]
+    html = report.build_html(snapshot)
     with open(os.path.join(reports_dir, f"{date}.md"), "w", encoding="utf-8") as fh:
         fh.write(report.build_markdown(snapshot))
+    with open(os.path.join(reports_dir, f"{date}.html"), "w", encoding="utf-8") as fh:
+        fh.write(html)
     if not skip_pdf:
-        report.html_to_pdf(report.build_html(snapshot), os.path.join(reports_dir, f"{date}.pdf"))
-    write_index(reports_dir)
+        report.html_to_pdf(html, os.path.join(reports_dir, f"{date}.pdf"))
+    write_index(reports_dir, data_dir)
 
 
 def main() -> int:
@@ -163,12 +181,13 @@ def main() -> int:
         path = os.path.join(data_dir, f"{date}.json")
         with open(path, encoding="utf-8") as fh:
             snapshot = json.load(fh)
+        previous = load_previous(data_dir, date)
         if "climbers" not in snapshot:  # 순위 비교가 없던 시절의 스냅샷은 저장된 풀로 채운다
-            snapshot["climbers"] = apply_pool_ranks(snapshot.get("rising", []), snapshot["pool"],
-                                                    load_previous(data_dir, date))
-            with open(path, "w", encoding="utf-8") as fh:
-                json.dump(snapshot, fh, ensure_ascii=False, indent=1)
-        write_reports(snapshot, reports_dir, args.skip_pdf)
+            snapshot["climbers"] = apply_pool_ranks(snapshot.get("rising", []), snapshot["pool"], previous)
+        snapshot["highlights"] = highlights.build(snapshot, previous)  # 요약은 현재 코드 기준으로 다시 만든다
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(snapshot, fh, ensure_ascii=False, indent=1)
+        write_reports(snapshot, reports_dir, args.skip_pdf, data_dir)
         return 0
 
     pool, failures = collect.collect_pool(cfg)
@@ -185,11 +204,13 @@ def main() -> int:
         "previous_date": previous["date"] if previous else None,
         "pool_size": len(pool), "search_failures": failures, "guide_meta": {**guide.meta(), "llm_model": summarize.model_name()},
         "top": top, "rising": rising, "climbers": climbers, "excluded": excluded,
-        "pool": [{"full_name": r["full_name"], "stars": r["stars"]} for r in pool],
+        "pool": [{"full_name": r["full_name"], "stars": r["stars"],
+                  "description": (r.get("description") or "")[:160]} for r in pool],
     }
+    snapshot["highlights"] = highlights.build(snapshot, previous)
     with open(os.path.join(data_dir, f"{date}.json"), "w", encoding="utf-8") as fh:
         json.dump(snapshot, fh, ensure_ascii=False, indent=1)
-    write_reports(snapshot, reports_dir, args.skip_pdf)
+    write_reports(snapshot, reports_dir, args.skip_pdf, data_dir)
     print(f"[done] {date}: top {len(top)}, excluded {len(excluded)}, pool {len(pool)}", file=sys.stderr)
     return 0
 
