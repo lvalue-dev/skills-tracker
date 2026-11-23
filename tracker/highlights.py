@@ -104,7 +104,19 @@ def build(snapshot: dict, previous: dict | None) -> dict:
             "skill_changes": skill_changes, "errors": errors, "high_flags": flags,
         },
         "excluded": [{"full_name": x["full_name"], "reason": x["reason"]} for x in snapshot.get("excluded", [])],
+        "watch": [_watch_item(w) for w in snapshot.get("watch", [])],
     }
+
+
+def _watch_item(w: dict) -> dict:
+    item = {"full_name": w["full_name"], "in_top": w.get("in_top"), "error": w.get("error"),
+            "stars": w.get("stars"), "delta": w.get("stars_delta"), "new": w.get("watch_new", False)}
+    t = w.get("test")
+    if t:
+        item.update(score=t["score"], grade=t["grade"], skills=t["counts"]["skills"],
+                    errors=sum(g["count"] for g in t.get("issue_summary", []) if g["level"] != "warning"),
+                    high=sum(f["count"] for f in t.get("flag_summary", []) if f["severity"] == "high"))
+    return item
 
 
 def _desc(snapshot: dict, full_name: str) -> str:

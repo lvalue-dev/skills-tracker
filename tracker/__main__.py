@@ -75,13 +75,47 @@ def apply_pool_ranks(rising: list[dict], pool: list[dict], previous: dict | None
     return climbers[:limit]
 
 
+def _summarizer():
+    if summarize.enabled():  # 선택: 사람이 쓴 요약이 없는 레포의 한글 요약 (LLM_API_KEY 가 있을 때만)
+        return summarize.Summarizer(os.path.join(ROOT, "data", ".cache", "notes_auto.json"))
+    return None
+
+
+def test_repo(repo: dict, workdir: str, limits: dict, summarizer) -> tuple[dict | None, str | None]:
+    """레포 하나를 읽기 전용으로 가져와 정적 테스트한다. (결과, 제외 사유) 중 하나만 채워진다."""
+    name = repo["full_name"]
+    dest = os.path.join(workdir, name.replace("/", "__"))
+    print(f"[test] {name} (★{repo['stars']:,})", file=sys.stderr)
+    try:
+        fetched = fetch.fetch_repo(name, dest, limits)
+        if not fetched["skill_dirs"]:
+            return None, "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"
+        result = checks.analyze_repo(dest, fetched, limits)
+        try:
+            result["guide"] = guide.build_guide(dest, fetched, repo, limits, summarizer)
+        except Exception as exc:  # 활용 가이드는 부가 정보 — 실패해도 리포트는 만든다
+            print(f"[guide] {name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            result["guide"] = None
+        result["commit"] = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=dest, capture_output=True, text=True,
+            env=fetch.safe_env()).stdout.strip()
+    except fetch.FetchError as exc:
+        return None, f"가져오기 실패: {exc}"
+    finally:
+        shutil.rmtree(dest, ignore_errors=True)
+    result["issue_summary"] = report.summarize_issues(result["issues"])
+    result["flag_summary"] = report.summarize_flags(result["flags"])
+    result["issues"] = result["issues"][:40]
+    result["flags"] = result["flags"][:40]
+    clean_first = sorted(result["skills"], key=lambda s: (s["errors"] > 0, not s["description"]))
+    result["skills"] = clean_first[:40]
+    return result, None
+
+
 def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]]:
     """스타 순으로 내려가며 SKILL.md 를 가진 레포 top_n 개를 테스트한다."""
     top, excluded = [], []
-    limits = cfg["limits"]
-    summarizer = None
-    if summarize.enabled():  # 선택: 사람이 쓴 요약이 없는 레포의 한글 요약 (LLM_API_KEY 가 있을 때만)
-        summarizer = summarize.Summarizer(os.path.join(ROOT, "data", ".cache", "notes_auto.json"))
+    summarizer = _summarizer()
     workdir = tempfile.mkdtemp(prefix="skills-tracker-")
     try:
         for checked, repo in enumerate(pool[: cfg["max_candidates_checked"]]):
@@ -89,40 +123,60 @@ def test_candidates(pool: list[dict], cfg: dict) -> tuple[list[dict], list[dict]
                 break
             if checked:
                 time.sleep(cfg["seconds_between_clones"])
-            name = repo["full_name"]
-            dest = os.path.join(workdir, name.replace("/", "__"))
-            print(f"[test] {name} (★{repo['stars']:,})", file=sys.stderr)
-            try:
-                fetched = fetch.fetch_repo(name, dest, limits)
-                if not fetched["skill_dirs"]:
-                    excluded.append({"full_name": name, "stars": repo["stars"],
-                                     "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"})
-                    continue
-                result = checks.analyze_repo(dest, fetched, limits)
-                try:
-                    result["guide"] = guide.build_guide(dest, fetched, repo, limits, summarizer)
-                except Exception as exc:  # 활용 가이드는 부가 정보 — 실패해도 리포트는 만든다
-                    print(f"[guide] {name}: {type(exc).__name__}: {exc}", file=sys.stderr)
-                    result["guide"] = None
-                result["commit"] = subprocess.run(
-                    ["git", "rev-parse", "HEAD"], cwd=dest, capture_output=True, text=True,
-                    env=fetch.safe_env()).stdout.strip()
-            except fetch.FetchError as exc:
-                excluded.append({"full_name": name, "stars": repo["stars"],
-                                 "reason": f"가져오기 실패: {exc}"})
+            result, reason = test_repo(repo, workdir, cfg["limits"], summarizer)
+            if result is None:
+                excluded.append({"full_name": repo["full_name"], "stars": repo["stars"], "reason": reason})
                 continue
-            finally:
-                shutil.rmtree(dest, ignore_errors=True)
-            result["issue_summary"] = report.summarize_issues(result["issues"])
-            result["flag_summary"] = report.summarize_flags(result["flags"])
-            result["issues"] = result["issues"][:40]
-            result["flags"] = result["flags"][:40]
-            clean_first = sorted(result["skills"], key=lambda s: (s["errors"] > 0, not s["description"]))
-            result["skills"] = clean_first[:40]
             top.append({**repo, "rank": len(top) + 1, "test": result})
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     return top, excluded
+
+
+def previous_stars(previous: dict | None) -> dict[str, int]:
+    if not previous:
+        return {}
+    stars = {r["full_name"]: r["stars"] for r in previous.get("pool", [])}
+    stars.update({w["full_name"]: w["stars"] for w in previous.get("watch", []) if w.get("stars") is not None})
+    return stars
+
+
+def test_watchlist(cfg: dict, top: list[dict], previous: dict | None) -> list[dict]:
+    """순위와 상관없이 매일 따라가는 관심 레포 (config.json 의 watchlist)."""
+    items = cfg.get("watchlist") or []
+    if not items:
+        return []
+    why = {i["repo"].lower(): i.get("why", "") for i in items}
+    in_top = {e["full_name"].lower(): e for e in top}
+    names = [i["repo"] for i in items if i["repo"].lower() not in in_top]
+    watch = [{"full_name": e["full_name"], "in_top": e["rank"], "why": why[e["full_name"].lower()]}
+             for e in top if e["full_name"].lower() in why]
+    if not names:
+        return watch
+    repos, missing = collect.fetch_repos(names, cfg)
+    prev_stars = previous_stars(previous)
+    prev_watch = {w["full_name"] for w in (previous or {}).get("watch", [])}
+    summarizer = _summarizer()
+    workdir = tempfile.mkdtemp(prefix="skills-tracker-watch-")
+    try:
+        for i, repo in enumerate(repos):
+            if i:
+                time.sleep(cfg["seconds_between_clones"])
+            result, reason = test_repo(repo, workdir, cfg["limits"], summarizer)
+            name = repo["full_name"]
+            entry = {**repo, "rank": None, "rank_label": "관심", "why": why.get(name.lower(), ""),
+                     "stars_delta": repo["stars"] - prev_stars[name] if name in prev_stars else None,
+                     "prev_rank": None, "is_new": False, "watch_new": bool(previous) and name not in prev_watch}
+            if result is None:
+                entry["error"] = reason
+            else:
+                entry["test"] = result
+            watch.append(entry)
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    watch += [{"full_name": n, "why": why[n.lower()], "error": "GitHub 검색에서 찾지 못함 (이름 변경·삭제·비공개?)"}
+              for n in missing]
+    return watch
 
 
 def write_index(reports_dir: str, data_dir: str | None = None) -> None:
@@ -165,6 +219,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", help="리포트 날짜 (기본: 설정 시간대의 오늘)")
     parser.add_argument("--skip-pdf", action="store_true")
+    parser.add_argument("--watch-only", action="store_true",
+                        help="저장된 data/<날짜>.json 에 관심 레포(watchlist)만 다시 검사해 넣고 리포트를 다시 만든다")
     parser.add_argument("--render-only", action="store_true",
                         help="네트워크 접근 없이 저장된 data/<날짜>.json 으로 리포트만 다시 만든다")
     args = parser.parse_args()
@@ -177,11 +233,13 @@ def main() -> int:
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(reports_dir, exist_ok=True)
 
-    if args.render_only:
+    if args.render_only or args.watch_only:
         path = os.path.join(data_dir, f"{date}.json")
         with open(path, encoding="utf-8") as fh:
             snapshot = json.load(fh)
         previous = load_previous(data_dir, date)
+        if args.watch_only:
+            snapshot["watch"] = test_watchlist(cfg, snapshot["top"], previous)
         if "climbers" not in snapshot:  # 순위 비교가 없던 시절의 스냅샷은 저장된 풀로 채운다
             snapshot["climbers"] = apply_pool_ranks(snapshot.get("rising", []), snapshot["pool"], previous)
         snapshot["highlights"] = highlights.build(snapshot, previous)  # 요약은 현재 코드 기준으로 다시 만든다
@@ -198,12 +256,13 @@ def main() -> int:
     previous = load_previous(data_dir, date)
     rising = apply_history(top, pool, previous)
     climbers = apply_pool_ranks(rising, pool, previous)
+    watch = test_watchlist(cfg, top, previous)
 
     snapshot = {
         "date": date, "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": cfg["timezone"],
         "previous_date": previous["date"] if previous else None,
         "pool_size": len(pool), "search_failures": failures, "guide_meta": {**guide.meta(), "llm_model": summarize.model_name()},
-        "top": top, "rising": rising, "climbers": climbers, "excluded": excluded,
+        "top": top, "watch": watch, "rising": rising, "climbers": climbers, "excluded": excluded,
         "pool": [{"full_name": r["full_name"], "stars": r["stars"],
                   "description": (r.get("description") or "")[:160]} for r in pool],
     }

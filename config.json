@@ -3,6 +3,12 @@
   "run_at": "08:23",
   "top_n": 10,
   "max_candidates_checked": 30,
+  "watchlist": [
+    {
+      "repo": "janestreet/agent_skills",
+      "why": "Jane Street 공식 스킬 레포. GitHub 토픽이 없고 설명이 짧아 스타 상위 검색에는 잡히지 않는다."
+    }
+  ],
   "per_query_results": 30,
   "seconds_between_api_calls": 2.5,
   "seconds_between_clones": 2.0,

@@ -181,6 +181,25 @@
         {"skill": "caveman-review", "note": "발견 사항당 한 줄(위치·문제·수정)짜리 코드 리뷰"}
       ],
       "cli": "README 에 자체 설치 도구(`npx @caveman-ai/cli@latest`), `npx skills add`, Claude Code 플러그인, Gemini 확장 명령이 있다. Codex 에서는 `$caveman` 으로 부른다."
+    },
+    "janestreet/agent_skills": {
+      "summary": "Jane Street 가 사내에서 매일 쓰던 스킬을 공개한 레포로, 지금은 `socratic-tutor` 하나뿐이다. 배우고 싶은 주제를 하위 기술 4~10개로 나누고 진단 질문으로 수준(0~5)을 잡은 뒤, 답을 알려주지 않고 한 번에 한 질문씩 캐물어 스스로 추론하게 만드는 엄격한 소크라테스식 튜터다.",
+      "use_when": [
+        "새 분야(언어·라이브러리·수학·금융 개념 등)를 제대로 익히고 싶을 때 — 'teach me', 'tutor me', 'quiz me', 'drill me' 로 시작",
+        "안다고 생각하는 개념을 검증하고 싶을 때 — 예고 없는 간격 복습과 마지막 종합 평가까지 통과해야 끝난다",
+        "여러 날에 걸쳐 배울 때 — 'save state' 로 진행 상황을 텍스트로 저장했다가 새 세션에서 'resume from:' 으로 이어간다"
+      ],
+      "caution": [
+        "단발성 질문('X 가 뭐야', 'X 설명해줘')에는 일부러 발동하지 않게 설계됐다. 배우겠다고 분명히 말해야 시작한다",
+        "칭찬 없이 엄격하게 평가하고, 2~3번 틀리기 전에는 답을 주지 않는다. 급하면 'just tell me' 로 그 질문만 답을 받는다",
+        "README 에 새 스킬이나 문구 수정 PR 은 받지 않는다고 적혀 있다. 고쳐 쓰려면 자기 사본을 만들 것",
+        "스크립트 없이 지침(SKILL.md 102줄)뿐이라 실행 위험이 없고, 일반 챗봇에는 본문을 붙여 넣어 써도 된다"
+      ],
+      "highlights": [
+        {"skill": "socratic-tutor", "note": "진단 → 기술 지도(0~5, 막대그래프) → 한 질문씩 가르치기 → 엄격한 평가·간격 복습 → 최종 평가. 'show progress', 'harder/easier', 'save state' 명령 지원"}
+      ],
+      "cli": "특정 CLI 전용 설정 없이 표준 SKILL.md 하나뿐이다. `socratic-tutor` 폴더를 쓰는 CLI 의 스킬 폴더에 복사하면 된다.",
+      "updated": "2026-11-23"
     }
   }
 }

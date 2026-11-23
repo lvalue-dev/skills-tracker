@@ -295,6 +295,30 @@ def highlight_sections(h: dict) -> list[tuple[str, list[list[tuple[str, str]]]]]
             items.append(line)
         sections.append((f"순위 상승 (전체 후보 {fmt_int(h.get('pool_size') or 0)}개 기준)", items))
 
+    # 관심 레포
+    if h.get("watch"):
+        items = []
+        for w in h["watch"]:
+            if w.get("in_top"):
+                items.append([_repo(w["full_name"]), ("t", f" — 오늘 Top {w['in_top']}위에 포함 (위 표 참고)")])
+                continue
+            if w.get("error"):
+                items.append([_repo(w["full_name"]), ("down", f" — {w['error']}")])
+                continue
+            line = [_repo(w["full_name"]), ("t", f" ★{fmt_int(w['stars'])}")]
+            if w.get("delta") is not None:
+                line += [("t", " ("), ("up" if w["delta"] > 0 else "down" if w["delta"] < 0 else "t", fmt_delta(w["delta"])),
+                         ("t", ")")]
+            line.append(("t", f" · 스킬 {fmt_int(w['skills'])}개 · {w['score']}점 {w['grade']}"))
+            if w.get("errors"):
+                line.append(("down", f" · 규격 오류 {w['errors']}건"))
+            if w.get("high"):
+                line.append(("down", f" · 안전 신호(높음) {w['high']}건"))
+            if w.get("new"):
+                line.append(("new", " · 오늘부터 추적"))
+            items.append(line)
+        sections.append(("관심 레포", items))
+
     # 테스트 결과
     t = h["tests"]
     items = []
@@ -392,6 +416,73 @@ def _md(text: str) -> str:
     return (text or "").replace("|", "\\|").replace("\n", " ").replace("<", "&lt;")
 
 
+def watch_tested(snapshot: dict) -> list[dict]:
+    """관심 레포 중 Top 에 없고 검사까지 마친 것."""
+    return [w for w in snapshot.get("watch", []) if w.get("test") and not w.get("in_top")]
+
+
+def _md_watch_table(snapshot: dict) -> list[str]:
+    watch = snapshot.get("watch") or []
+    if not watch:
+        return []
+    out = ["## 관심 레포", "", "순위와 상관없이 매일 따라가는 레포입니다 (`config.json` 의 `watchlist`).", "",
+           "| 레포 | ★ 스타 | 전일 대비 | 스킬 수 | 점수 | 등급 | 추가 이유 |", "|---|--:|--:|--:|--:|:--:|---|"]
+    for w in watch:
+        link = f"[{w['full_name']}](https://github.com/{w['full_name']})"
+        if w.get("in_top"):
+            out.append(f"| {link} | – | – | – | – | – | 오늘 Top {w['in_top']}위 · {_md(w.get('why', ''))} |")
+        elif not w.get("test"):
+            out.append(f"| {link} | {fmt_int(w['stars']) if w.get('stars') else '–'} | – | – | – | – | "
+                       f"{_md(w.get('error', ''))} |")
+        else:
+            t = w["test"]
+            out.append(f"| {link} | {fmt_int(w['stars'])} | {fmt_delta(w.get('stars_delta'))} | "
+                       f"{fmt_int(t['counts']['skills'])} | {t['score']} | {t['grade']} | {_md(w.get('why', ''))} |")
+    return out + [""]
+
+
+def _md_repo_block(e: dict) -> list[str]:
+    t, c = e["test"], e["test"]["counts"]
+    label = e.get("rank_label") or f"{e['rank']}."
+    out = [f"### {label} {e['full_name']} — {t['grade']} ({t['score']}점)", "",
+           f"> {_md(e['description']) or '(설명 없음)'}", ""]
+    out += _md_guide(e)
+    out += ([f"**테스트 결과**", ""] if guide_of(e) else [])
+    out += [f"- ★ {fmt_int(e['stars'])} · 포크 {fmt_int(e['forks'])} · 라이선스 {e.get('license') or '미표기'}"
+            f" · 최근 푸시 {(e.get('pushed_at') or '')[:10]} · 검사 커밋 `{(t.get('commit') or '')[:7]}`",
+            f"- 규격 통과 {ratio(c['spec_pass'], c['skills'])} · 권고까지 무결 {ratio(c['clean'], c['skills'])}",
+            f"- 상대 링크 정상 {ratio(c['links_total'] - c['links_broken'], c['links_total'])}"
+            f" · 스크립트 문법 정상 {ratio(c['scripts_total'] - c['scripts_bad'], c['scripts_total'])}"]
+    for g in t["issue_summary"]:
+        out.append(f"- [{LEVEL_LABEL[g['level']]}] {g['kind']} × {g['count']} (예: `{g['example']}`)")
+    for f in t["flag_summary"]:
+        out.append(f"- [안전 신호·{f['severity']}] {f['label']} × {f['count']} (예: `{f['path']}:{f['line']}`)")
+    return out + [""]
+
+
+def _html_watch_table(snapshot: dict) -> str:
+    watch = snapshot.get("watch") or []
+    if not watch:
+        return ""
+    rows = []
+    for w in watch:
+        name = f'<div class="repo">{repo_link(w["full_name"])}</div><div class="desc">{escape(w.get("why", ""))}</div>'
+        if w.get("in_top"):
+            rows.append(f'<tr><td>{name}</td><td colspan="5" class="none">오늘 Top {w["in_top"]}위에 포함 — 위 표 참고</td></tr>')
+        elif not w.get("test"):
+            rows.append(f'<tr><td>{name}</td><td colspan="5" class="down">{escape(w.get("error", ""))}</td></tr>')
+        else:
+            t = w["test"]
+            rows.append(f'<tr><td>{name}</td><td class="num">{fmt_int(w["stars"])}</td>'
+                        f'<td class="num">{_delta_html(w.get("stars_delta"))}</td>'
+                        f'<td class="num">{fmt_int(t["counts"]["skills"])}</td><td class="num">{t["score"]}</td>'
+                        f'<td class="ctr"><span class="grade g{t["grade"]}">{t["grade"]}</span></td></tr>')
+    return ('<h2>관심 레포</h2><p class="note">순위와 상관없이 매일 따라가는 레포입니다 (config.json 의 watchlist).</p>'
+            '<table><thead><tr><th>레포 · 추가 이유</th><th class="num">★ 스타</th><th class="num">전일 대비</th>'
+            '<th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody></table>')
+
+
 def build_markdown(snapshot: dict) -> str:
     ov = overview(snapshot)
     out = [f"# AI Skills 일일 리포트 — {snapshot['date']}", "",
@@ -409,6 +500,7 @@ def build_markdown(snapshot: dict) -> str:
                    f"{fmt_int(e['stars'])} | {fmt_delta(e.get('stars_delta'))} | "
                    f"{fmt_int(t['counts']['skills'])} | {t['score']} | {t['grade']} |")
     out.append("")
+    out += _md_watch_table(snapshot)
     out += _md_matrix(snapshot)
     if snapshot.get("rising"):
         out += ["## 급상승 (전일 대비 스타 증가)", "",
@@ -430,21 +522,12 @@ def build_markdown(snapshot: dict) -> str:
         out += ["", RANK_NOTE, ""]
     out += ["## 레포별 활용 가이드와 테스트 결과" if has_guides(snapshot) else "## 레포별 테스트 결과", ""]
     for e in snapshot["top"]:
-        t, c = e["test"], e["test"]["counts"]
-        out += [f"### {e['rank']}. {e['full_name']} — {t['grade']} ({t['score']}점)", "",
-                f"> {_md(e['description']) or '(설명 없음)'}", ""]
-        out += _md_guide(e)
-        out += ([f"**테스트 결과**", ""] if guide_of(e) else [])
-        out += [f"- ★ {fmt_int(e['stars'])} · 포크 {fmt_int(e['forks'])} · 라이선스 {e.get('license') or '미표기'}"
-                f" · 최근 푸시 {(e.get('pushed_at') or '')[:10]} · 검사 커밋 `{(t.get('commit') or '')[:7]}`",
-                f"- 규격 통과 {ratio(c['spec_pass'], c['skills'])} · 권고까지 무결 {ratio(c['clean'], c['skills'])}",
-                f"- 상대 링크 정상 {ratio(c['links_total'] - c['links_broken'], c['links_total'])}"
-                f" · 스크립트 문법 정상 {ratio(c['scripts_total'] - c['scripts_bad'], c['scripts_total'])}"]
-        for g in t["issue_summary"]:
-            out.append(f"- [{LEVEL_LABEL[g['level']]}] {g['kind']} × {g['count']} (예: `{g['example']}`)")
-        for f in t["flag_summary"]:
-            out.append(f"- [안전 신호·{f['severity']}] {f['label']} × {f['count']} (예: `{f['path']}:{f['line']}`)")
-        out.append("")
+        out += _md_repo_block(e)
+    watched = watch_tested(snapshot)
+    if watched:
+        out += ["## 관심 레포 활용 가이드와 테스트 결과", ""]
+        for e in watched:
+            out += _md_repo_block(e)
     if snapshot.get("excluded"):
         out += ["## 제외된 후보", "", "| 레포 | ★ 스타 | 사유 |", "|---|--:|---|"]
         for x in snapshot["excluded"]:
@@ -713,7 +796,7 @@ def _card(e: dict) -> str:
     delta = f" ({fmt_delta(e['stars_delta'])})" if e.get("stars_delta") is not None else ""
     return f"""
 <div class="card{' long' if guide_block else ''}">
-  <h3><span class="rk">#{e['rank']}</span><span>{escape(e['full_name'])}</span>
+  <h3><span class="rk">{escape(e.get('rank_label') or '#' + str(e['rank']))}</span><span>{escape(e['full_name'])}</span>
       <span class="sc"><span class="grade g{t['grade']}">{t['grade']}</span> {t['score']}점</span></h3>
   <div class="meta">★ {fmt_int(e['stars'])}{escape(delta)} · 포크 {fmt_int(e['forks'])}
     · 라이선스 {escape(e.get('license') or '미표기')} · {escape(e.get('language') or '언어 미표기')}
@@ -800,10 +883,12 @@ def build_html(snapshot: dict) -> str:
 <table><thead><tr><th class="num">#</th><th class="ctr">순위 변동</th><th>레포</th><th class="num">★ 스타</th>
 <th class="num">전일 대비</th><th class="num">스킬 수</th><th class="num">점수</th><th class="ctr">등급</th></tr></thead>
 <tbody>{rows}</tbody></table>
+{_html_watch_table(snapshot)}
 {_matrix_html(snapshot)}
 {rising}
 <h2>{'레포별 활용 가이드와 테스트 결과' if has_guides(snapshot) else '레포별 테스트 결과'}</h2>
 {''.join(_card(e) for e in snapshot['top'])}
+{('<h2>관심 레포 활용 가이드와 테스트 결과</h2>' + ''.join(_card(e) for e in watch_tested(snapshot))) if watch_tested(snapshot) else ''}
 {excluded}
 <h2>방법과 한계</h2>
 <ul class="note">

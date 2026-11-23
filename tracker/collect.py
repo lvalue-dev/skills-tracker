@@ -115,3 +115,27 @@ def collect_pool(cfg: dict) -> tuple[list[dict], list[str]]:
         raise SearchError("모든 검색이 실패했습니다: " + "; ".join(failures))
     ranked = sorted(pool.values(), key=lambda r: (-r["stars"], r["full_name"]))
     return ranked, failures
+
+
+def fetch_repos(names: list[str], cfg: dict) -> tuple[list[dict], list[str]]:
+    """관심 레포의 메타데이터를 검색 API(`repo:소유자/이름`)로 가져온다. 순위 검색과 같은 읽기 전용 GET.
+
+    돌려주는 순서는 names 순서이고, 찾지 못한 이름은 두 번째 값으로 돌려준다.
+    """
+    found: dict[str, dict] = {}
+    for i in range(0, len(names), 5):  # 검색어 길이 제한(256자) 안에서 몇 개씩 묶는다
+        if i:
+            time.sleep(cfg["seconds_between_api_calls"])
+        query = " ".join(f"repo:{n}" for n in names[i:i + 5])
+        try:
+            items = _search(query, 10)
+        except SearchError as exc:
+            print(f"[watch] WARN {exc}", file=sys.stderr)
+            continue
+        for item in items:
+            repo = _slim(item)
+            found[repo["full_name"].lower()] = repo
+    repos = [found[n.lower()] for n in names if n.lower() in found]
+    missing = [n for n in names if n.lower() not in found]
+    return repos, missing
+

@@ -7142,6 +7142,214 @@
     "full_name": "Graphify-Labs/graphify",
     "reason": "SKILL.md 없음 (스킬 묶음이 아닌 도구·목록 레포)"
    }
+  ],
+  "watch": [
+   {
+    "full_name": "janestreet/agent_skills",
+    "in_top": null,
+    "error": null,
+    "stars": 11352,
+    "delta": null,
+    "new": true,
+    "score": 100.0,
+    "grade": "A",
+    "skills": 1,
+    "errors": 0,
+    "high": 0
+   }
   ]
- }
+ },
+ "watch": [
+  {
+   "full_name": "janestreet/agent_skills",
+   "html_url": "https://github.com/janestreet/agent_skills",
+   "description": "Agent skills",
+   "language": null,
+   "topics": [],
+   "pushed_at": "2026-11-17T16:38:00Z",
+   "created_at": "2026-11-03T16:50:21Z",
+   "default_branch": "master",
+   "size": 7,
+   "stars": 11352,
+   "forks": 779,
+   "license": "MIT",
+   "rank": null,
+   "rank_label": "관심",
+   "why": "Jane Street 공식 스킬 레포. GitHub 토픽이 없고 설명이 짧아 스타 상위 검색에는 잡히지 않는다.",
+   "stars_delta": null,
+   "prev_rank": null,
+   "is_new": false,
+   "watch_new": true,
+   "test": {
+    "counts": {
+     "skills": 1,
+     "spec_pass": 1,
+     "clean": 1,
+     "links_total": 0,
+     "links_broken": 0,
+     "scripts_total": 0,
+     "scripts_bad": 0
+    },
+    "skills": [
+     {
+      "path": "socratic-tutor/SKILL.md",
+      "name": "socratic-tutor",
+      "description": "Structured Socratic tutoring when the user explicitly asks to be taught, quizzed, or drilled to mastery on a topic: diagnostic placement, a skill map with levels 0-5, spaced review, and a final assessment. Trigger phrases: 'teach me', 'tutor me', 'quiz me', 'drill me', 'help me master'. Not for one-",
+      "errors": 0,
+      "warnings": 0
+     }
+    ],
+    "issues": [],
+    "flags": [],
+    "truncated": false,
+    "score": 100.0,
+    "grade": "A",
+    "breakdown": {
+     "spec": 55.0,
+     "quality": 15.0,
+     "links": 15,
+     "scripts": 15
+    },
+    "guide": {
+     "kind": "단일 스킬",
+     "unique_skills": 1,
+     "copies": 0,
+     "categories": [
+      {
+       "id": "debug",
+       "label": "디버깅",
+       "count": 1
+      }
+     ],
+     "situations": [
+      "버그·테스트 실패의 원인을 체계적으로 추적할 때"
+     ],
+     "skills": [
+      {
+       "name": "socratic-tutor",
+       "path": "socratic-tutor",
+       "what": "Structured Socratic tutoring when the user explicitly asks to be taught, quizzed, or drilled to mastery on a topic: diagnostic placement, a skill map with levels 0-5, spaced review, and a final asses…",
+       "when": "Trigger phrases: 'teach me', 'tutor me', 'quiz me', 'drill me', 'help me master'. Not for one-off 'explain X' or 'what is X' questions.",
+       "cats": [
+        "debug"
+       ],
+       "features": []
+      }
+     ],
+     "install": [],
+     "compat": {
+      "clis": [
+       {
+        "id": "claude",
+        "label": "Claude Code",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a claude-code"
+        ],
+        "how_kind": "generic"
+       },
+       {
+        "id": "codex",
+        "label": "Codex CLI",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a codex"
+        ],
+        "how_kind": "generic"
+       },
+       {
+        "id": "opencode",
+        "label": "opencode",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a opencode"
+        ],
+        "how_kind": "generic"
+       },
+       {
+        "id": "kimi",
+        "label": "Kimi Code CLI",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a kimi-code-cli"
+        ],
+        "how_kind": "generic"
+       },
+       {
+        "id": "gemini",
+        "label": "Gemini CLI",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a gemini-cli"
+        ],
+        "how_kind": "generic"
+       },
+       {
+        "id": "cursor",
+        "label": "Cursor",
+        "level": "ok",
+        "score": 0.0,
+        "evidence": [],
+        "caveats": [],
+        "how": [
+         "npx skills add janestreet/agent_skills -a cursor"
+        ],
+        "how_kind": "generic"
+       }
+      ],
+      "optimized": [],
+      "optimized_kind": "none",
+      "optimized_label": "특정 CLI 없음 (표준 SKILL.md)",
+      "portable": {
+       "clean": 1,
+       "total": 1
+      },
+      "features": [],
+      "verified": "2026-11-19"
+     },
+     "note": {
+      "summary": "Jane Street 가 사내에서 매일 쓰던 스킬을 공개한 레포로, 지금은 `socratic-tutor` 하나뿐이다. 배우고 싶은 주제를 하위 기술 4~10개로 나누고 진단 질문으로 수준(0~5)을 잡은 뒤, 답을 알려주지 않고 한 번에 한 질문씩 캐물어 스스로 추론하게 만드는 엄격한 소크라테스식 튜터다.",
+      "use_when": [
+       "새 분야(언어·라이브러리·수학·금융 개념 등)를 제대로 익히고 싶을 때 — 'teach me', 'tutor me', 'quiz me', 'drill me' 로 시작",
+       "안다고 생각하는 개념을 검증하고 싶을 때 — 예고 없는 간격 복습과 마지막 종합 평가까지 통과해야 끝난다",
+       "여러 날에 걸쳐 배울 때 — 'save state' 로 진행 상황을 텍스트로 저장했다가 새 세션에서 'resume from:' 으로 이어간다"
+      ],
+      "caution": [
+       "단발성 질문('X 가 뭐야', 'X 설명해줘')에는 일부러 발동하지 않게 설계됐다. 배우겠다고 분명히 말해야 시작한다",
+       "칭찬 없이 엄격하게 평가하고, 2~3번 틀리기 전에는 답을 주지 않는다. 급하면 'just tell me' 로 그 질문만 답을 받는다",
+       "README 에 새 스킬이나 문구 수정 PR 은 받지 않는다고 적혀 있다. 고쳐 쓰려면 자기 사본을 만들 것",
+       "스크립트 없이 지침(SKILL.md 102줄)뿐이라 실행 위험이 없고, 일반 챗봇에는 본문을 붙여 넣어 써도 된다"
+      ],
+      "highlights": [
+       {
+        "skill": "socratic-tutor",
+        "note": "진단 → 기술 지도(0~5, 막대그래프) → 한 질문씩 가르치기 → 엄격한 평가·간격 복습 → 최종 평가. 'show progress', 'harder/easier', 'save state' 명령 지원"
+       }
+      ],
+      "cli": "특정 CLI 전용 설정 없이 표준 SKILL.md 하나뿐이다. `socratic-tutor` 폴더를 쓰는 CLI 의 스킬 폴더에 복사하면 된다.",
+      "updated": "2026-11-19",
+      "source": "hand"
+     }
+    },
+    "commit": "469868f4489cbdbe178c775a0af05bb6bef63689",
+    "issue_summary": [],
+    "flag_summary": []
+   }
+  }
+ ]
 }

@@ -104,4 +104,17 @@ python -m unittest discover -s tests   # 검사기 자체 테스트만
 ## 설정
 
 `config.json` 에서 검색어(`search_queries`), 수집 개수(`top_n`), 시간대, 실행 시각(`run_at`), 요청 간격, 상한을 바꿀 수 있습니다.
+
+**관심 레포(`watchlist`)** — 스타 순위와 상관없이 매일 따라갈 레포를 적습니다. 토픽이 없거나 설명이 짧아
+순위 검색에 잡히지 않는 레포(예: `janestreet/agent_skills`)도 같은 테스트·가이드·전일 대비 스타 증감과 함께
+리포트의 ‘관심 레포’ 절에 실립니다. 오늘 Top 에 들어 있으면 따로 검사하지 않고 그 순위를 표시합니다.
+
+```json
+"watchlist": [
+  {"repo": "janestreet/agent_skills", "why": "Jane Street 공식 스킬 레포"}
+]
+```
+
+새로 추가한 레포를 오늘 리포트에 바로 넣으려면 (그 레포만 읽기 전용으로 받아 검사):
+`python -m tracker --watch-only` (홈서버: `docker compose run --rm tracker python -m tracker --watch-only`)
 홈서버에서는 `config.json` 을 고친 뒤 `docker compose up -d --build` 로 반영합니다.

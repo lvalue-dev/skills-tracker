@@ -109,3 +109,50 @@ class HighlightTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WatchlistTests(unittest.TestCase):
+    CFG = {"watchlist": [{"repo": "js/skills", "why": "공식 레포"}, {"repo": "top/one", "why": "이미 상위"},
+                         {"repo": "gone/repo", "why": "삭제됨"}],
+           "limits": {}, "seconds_between_clones": 0, "seconds_between_api_calls": 0}
+
+    def run_watch(self, previous):
+        from tracker import __main__ as m
+        top = [{"full_name": "top/one", "rank": 3}]
+        meta = {"full_name": "js/skills", "stars": 120, "description": "Agent skills", "forks": 1}
+        with mock.patch.object(m.collect, "fetch_repos", return_value=([meta], ["gone/repo"])) as fr, \
+                mock.patch.object(m, "test_repo", return_value=(_test(100, skills=1), None)), \
+                mock.patch.object(m, "_summarizer", return_value=None):
+            watch = m.test_watchlist(self.CFG, top, previous)
+        fr.assert_called_once_with(["js/skills", "gone/repo"], self.CFG)  # Top 에 있는 레포는 다시 받지 않는다
+        return watch
+
+    def test_watchlist_entries(self):
+        watch = self.run_watch({"date": "d0", "pool": [], "watch": [{"full_name": "js/skills", "stars": 100}]})
+        by = {w["full_name"]: w for w in watch}
+        self.assertEqual(by["top/one"]["in_top"], 3)
+        self.assertEqual((by["js/skills"]["stars_delta"], by["js/skills"]["watch_new"]), (20, False))
+        self.assertIn("찾지 못함", by["gone/repo"]["error"])
+        first = {w["full_name"]: w for w in self.run_watch({"date": "d0", "pool": []})}
+        self.assertEqual((first["js/skills"]["stars_delta"], first["js/skills"]["watch_new"]), (None, True))
+
+    def test_watch_rendering(self):
+        watch = self.run_watch({"date": "d0", "pool": [], "watch": [{"full_name": "js/skills", "stars": 100}]})
+        for w in watch:
+            if w.get("test"):
+                w.update(forks=1, license="MIT", pushed_at="2026-01-01", html_url="", description="<b>x</b>",
+                         rank_label="관심")
+                w["test"].update(counts={"skills": 1, "spec_pass": 1, "clean": 1, "links_total": 0, "links_broken": 0,
+                                         "scripts_total": 0, "scripts_bad": 0}, skills=[], commit="abc")
+        snap = {"date": "d1", "generated_at": "", "timezone": "Asia/Seoul", "previous_date": "d0", "pool_size": 1,
+                "search_failures": [], "top": [], "watch": watch, "rising": [], "climbers": [], "excluded": []}
+        snap["highlights"] = highlights.build(snap, {"date": "d0", "top": []})
+        md = report.build_markdown(snap)
+        self.assertIn("| [js/skills](https://github.com/js/skills) | 120 | +20 | 1 | 100 | A | 공식 레포 |", md)
+        self.assertIn("**js/skills** ★120 (+20) · 스킬 1개 · 100점 A", md)
+        self.assertIn("**top/one** — 오늘 Top 3위에 포함", md)
+        self.assertIn("**gone/repo** — GitHub 검색에서 찾지 못함", md)
+        self.assertIn("### 관심 js/skills — A (100점)", md)
+        html = report.build_html(snap)
+        self.assertIn("관심 레포 활용 가이드와 테스트 결과", html)
+        self.assertNotIn("<b>x</b>", html)
