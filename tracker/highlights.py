@@ -23,6 +23,10 @@ def _error_kinds(test: dict) -> dict[str, int]:
     return {g["kind"]: g["count"] for g in test.get("issue_summary", []) if g["level"] != "warning"}
 
 
+def _issue_kinds(test: dict) -> dict[str, int]:
+    return {g["kind"]: g["count"] for g in test.get("issue_summary", [])}
+
+
 def _high_flags(test: dict) -> dict[str, dict]:
     return {f["rule"]: f for f in test.get("flag_summary", []) if f["severity"] == "high"}
 
@@ -59,8 +63,9 @@ def build(snapshot: dict, previous: dict | None) -> dict:
         if not p:
             continue
         now_t, prev_t = e["test"], p["test"]
-        fixed = [k for k in _error_kinds(prev_t) if k not in _error_kinds(now_t)]
-        added = [k for k in _error_kinds(now_t) if k not in _error_kinds(prev_t)]
+        # 점수 변화의 사유: 규격 오류뿐 아니라 권고·스크립트 문제까지 비교한다
+        fixed = [k for k in _issue_kinds(prev_t) if k not in _issue_kinds(now_t)]
+        added = [k for k in _issue_kinds(now_t) if k not in _issue_kinds(prev_t)]
         change = {"full_name": e["full_name"], "prev": prev_t["score"], "now": now_t["score"],
                   "fixed": fixed, "added": added}
         if now_t["score"] > prev_t["score"]:
